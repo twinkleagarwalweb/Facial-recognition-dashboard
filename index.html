@@ -56,7 +56,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .tab:hover:not(.active){color:var(--text)}
 
 /* L1 metric strip */
-.metric-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:.5px solid var(--border);flex-shrink:0}
+.metric-strip{display:grid;grid-template-columns:repeat(6,1fr);border-bottom:.5px solid var(--border);flex-shrink:0}
 .mc{padding:9px 12px;border-right:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .mc:last-child{border-right:none}
 .mc:hover,.mc.active{background:var(--blue-l)}
@@ -165,13 +165,15 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
       <option value="ALL">All events</option>
       <option value="LOGIN">Login</option>
       <option value="RE_VERIFY">Re-verify</option>
-      <option value="ENROLL">Enroll</option>
+      <option value="CHECK_IN">Check-in</option>
+      <option value="ENROLLMENT">Enrollment</option>
     </select>
     <select id="filter-outcome" onchange="applyFilters()">
       <option value="ALL">All outcomes</option>
-      <option value="FACE_SUCCESS">Success</option>
+      <option value="FACE_SUCCESS">Face success</option>
       <option value="MISSED">Missed</option>
-      <option value="FACE_FAIL">Failed</option>
+      <option value="PIN_FALLBACK">PIN fallback</option>
+      <option value="FACE_REJECTED">Face rejected</option>
     </select>
     <span class="updated-pill" id="updated-pill">—</span>
     <button class="refresh-btn" id="refresh-btn" onclick="loadData()">↻ Refresh</button>
@@ -200,6 +202,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <div class="mc-sub" id="m-login-sub">LOGIN events</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-login" style="background:#185FA5"></div></div>
   </div>
+  <div class="mc" id="mc-checkin">
+    <div class="mc-label">Check-in pass</div>
+    <div class="mc-val" id="m-checkin">—</div>
+    <div class="mc-sub" id="m-checkin-sub">CHECK_IN events</div>
+    <div class="mc-bar"><div class="mc-fill" id="mb-checkin" style="background:#0F6E56"></div></div>
+  </div>
   <div class="mc" id="mc-conf" onclick="setMapLayer('conf',this)">
     <div class="mc-label">Avg confidence</div>
     <div class="mc-val" id="m-conf">—</div>
@@ -209,13 +217,13 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   <div class="mc" id="mc-miss" onclick="setMapLayer('miss',this)">
     <div class="mc-label">Missed / timeout</div>
     <div class="mc-val" id="m-miss">—</div>
-    <div class="mc-sub">RE_VERIFY timeouts</div>
+    <div class="mc-sub" id="m-miss-sub">RE_VERIFY timeouts</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-miss" style="background:#ef4444"></div></div>
   </div>
   <div class="mc" id="mc-agents">
     <div class="mc-label">Unique agents</div>
     <div class="mc-val" id="m-agents">—</div>
-    <div class="mc-sub">in filtered view</div>
+    <div class="mc-sub" id="m-agents-sub">in filtered view</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-agents" style="background:#0F6E56;width:100%"></div></div>
   </div>
 </div>
@@ -235,8 +243,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
         <div id="legend-body">
           <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div>Face success</div>
           <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div>Missed / timeout</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#f59e0b"></div>Face failed</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login</div>
+          <div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>PIN fallback</div>
+          <div class="legend-row"><div class="legend-swatch" style="background:#dc6f00"></div>Face rejected</div>
+          <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>
         </div>
       </div>
     </div>
@@ -412,9 +421,11 @@ function confColor(c){
   return '#9ca3af';
 }
 function outcomeColor(o){
-  if(o==='FACE_SUCCESS') return '#22c55e';
-  if(o==='MISSED')       return '#ef4444';
-  if(o==='FACE_FAIL')    return '#f59e0b';
+  if(o==='FACE_SUCCESS')  return '#22c55e';
+  if(o==='MISSED')        return '#ef4444';
+  if(o==='FACE_FAIL')     return '#f59e0b';
+  if(o==='FACE_REJECTED') return '#dc6f00';
+  if(o==='PIN_FALLBACK')  return '#854F0B';
   return '#185FA5';
 }
 function shortId(id){ return id ? id.slice(0,8)+'…' : '—'; }
@@ -439,19 +450,27 @@ function barHTML(label, val, max, color, isPct=false){
 function aggregate(events){
   const reverify = events.filter(e=>e.eventType==='RE_VERIFY');
   const login    = events.filter(e=>e.eventType==='LOGIN');
+  const checkin  = events.filter(e=>e.eventType==='CHECK_IN');
+  const enroll   = events.filter(e=>e.eventType==='ENROLLMENT');
   const rvPass   = reverify.filter(e=>e.outcome==='FACE_SUCCESS').length;
   const lgPass   = login.filter(e=>e.outcome==='FACE_SUCCESS').length;
+  const ciPass   = checkin.filter(e=>e.outcome==='FACE_SUCCESS').length;
   const missed   = events.filter(e=>e.outcome==='MISSED').length;
+  const pinFall  = events.filter(e=>e.outcome==='PIN_FALLBACK').length;
+  const rejected = events.filter(e=>e.outcome==='FACE_REJECTED').length;
   const withConf = events.filter(e=>e.confidence>0);
   const avgConf  = withConf.length ? withConf.reduce((a,e)=>a+e.confidence,0)/withConf.length : 0;
   return {
     total: events.length,
     reverify: reverify.length, login: login.length,
-    rvPass, lgPass, missed, avgConf,
+    checkin: checkin.length,  enroll: enroll.length,
+    rvPass, lgPass, ciPass, missed, pinFall, rejected, avgConf,
     agents: new Set(events.map(e=>e.individualId)).size,
     rvPassRate: pct(rvPass, reverify.length),
     lgPassRate: pct(lgPass, login.length),
+    ciPassRate: pct(ciPass, checkin.length),
     missRate:   pct(missed, reverify.length),
+    pinRate:    pct(pinFall, events.length),
   };
 }
 
@@ -506,19 +525,27 @@ function updateAll(){
    ═══════════════════════════════════════════════ */
 function updateMetricStrip(){
   const a = aggregate(filteredEvents);
-  const set = (id, val, sub, barId, w, color) => {
-    document.getElementById(id).textContent = val;
-    if(sub) document.getElementById(id+'-sub').textContent = sub;
-    document.getElementById(barId).style.width = w+'%';
-    document.getElementById(barId).style.background = color;
-  };
-  set('m-pass',  a.reverify ? a.rvPassRate+'%' : '—', a.reverify+' RE_VERIFY', 'mb-pass',  a.rvPassRate, a.rvPassRate>=75?'#22c55e':'#ef4444');
-  set('m-login', a.login    ? a.lgPassRate+'%' : '—', a.login+' LOGIN',        'mb-login', a.lgPassRate, '#185FA5');
-  document.getElementById('m-conf').textContent  = a.avgConf ? (a.avgConf*100).toFixed(1)+'%' : '—';
-  document.getElementById('mb-conf').style.width = (a.avgConf*100)+'%';
-  document.getElementById('mb-conf').style.background = confColor(a.avgConf);
-  set('m-miss',  a.reverify ? a.missRate+'%' : '—', 'timeouts', 'mb-miss', a.missRate, '#ef4444');
-  document.getElementById('m-agents').textContent = a.agents;
+  const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  const setStyle = (id, prop, val) => { const el = document.getElementById(id); if(el) el.style[prop] = val; };
+  setEl('m-pass', a.reverify ? a.rvPassRate+'%' : '—');
+  setEl('m-pass-sub', a.reverify+' RE_VERIFY events');
+  setStyle('mb-pass','width', a.rvPassRate+'%');
+  setStyle('mb-pass','background', a.rvPassRate>=75?'#22c55e':'#ef4444');
+  setEl('m-login', a.login ? a.lgPassRate+'%' : '—');
+  setEl('m-login-sub', a.login+' LOGIN events');
+  setStyle('mb-login','width', a.lgPassRate+'%');
+  setStyle('mb-login','background','#185FA5');
+  setEl('m-checkin', a.checkin ? a.ciPassRate+'%' : '—');
+  setEl('m-checkin-sub', a.checkin+' CHECK_IN events');
+  setStyle('mb-checkin','width', a.ciPassRate+'%');
+  setStyle('mb-checkin','background', a.ciPassRate>=75?'#0F6E56':'#ef4444');
+  setEl('m-conf', a.avgConf ? (a.avgConf*100).toFixed(1)+'%' : '—');
+  setStyle('mb-conf','width',(a.avgConf*100)+'%');
+  setStyle('mb-conf','background',confColor(a.avgConf));
+  setEl('m-miss', a.reverify ? a.missRate+'%' : '—');
+  setStyle('mb-miss','width', a.missRate+'%');
+  setStyle('mb-miss','background','#ef4444');
+  setEl('m-agents', a.agents);
 }
 
 /* ═══════════════════════════════════════════════
