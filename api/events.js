@@ -32,7 +32,7 @@ const REQUEST_INFO = {
 };
 
 async function fetchPage(offset) {
-  const url = `${API_BASE}?tenantId=${TENANT_ID}&limit=${PAGE_SIZE}&offset=${offset}`;
+  const url = `${API_BASE}?tenantId=${TENANT_ID}&limit=${PAGE_SIZE}&offset=${offset}&sortBy=createdtime&sortOrder=DESC`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
