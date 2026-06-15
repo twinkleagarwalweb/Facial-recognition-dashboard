@@ -135,6 +135,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .updated-pill{font-size:10px;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:20px;color:rgba(255,255,255,.7);white-space:nowrap}
 
 .face-marker{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.face-thumb{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);flex-shrink:0;background:var(--bg3)}
+.face-thumb-lg{width:88px;height:88px;border-radius:8px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}
+.face-thumb-sm{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px}
+.no-face{width:56px;height:56px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -616,8 +620,15 @@ function updateMap(){
   }
 }
 
+function faceImgTag(faceImage, cls='face-thumb') {
+  if (faceImage) return `<img src="data:image/jpeg;base64,${faceImage}" class="${cls}" alt="Face scan">`;
+  return `<div class="${cls === 'face-thumb-lg' ? 'face-thumb-lg' : 'no-face'}" style="${cls==='face-thumb-lg'?'display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;width:88px;height:88px':''}">👤</div>`;
+}
+
 function popupHTML(e){
+  const img = e.faceImage ? `<img src="data:image/jpeg;base64,${e.faceImage}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;display:block;margin-bottom:6px;border:1px solid #ddd">` : '';
   return `<div style="font-size:12px;line-height:1.7;min-width:155px">
+    ${img}
     <div style="font-weight:600;margin-bottom:3px">${shortId(e.individualId)}</div>
     <div><b>Type:</b> ${e.eventType}</div>
     <div><b>Outcome:</b> <span style="color:${outcomeColor(e.outcome)}">${e.outcome}</span></div>
@@ -730,7 +741,11 @@ function showEventDetail(e){
   selectedItem = e;
   document.getElementById('rp-title').textContent = shortId(e.individualId);
   document.getElementById('rp-back').style.display='';
+  const faceBlock = e.faceImage
+    ? `<img src="data:image/jpeg;base64,${e.faceImage}" class="face-thumb-lg" alt="Face scan at ${e.eventType}">`
+    : `<div style="width:88px;height:88px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:8px">👤</div>`;
   document.getElementById('rp-body').innerHTML=`
+    ${faceBlock}
     <div class="stat-grid">
       <div class="stat-card" style="grid-column:1/-1"><div class="sl">Individual ID</div>
         <div style="font-size:10px;word-break:break-all;margin-top:2px;font-weight:500">${e.individualId||'—'}</div></div>
@@ -779,8 +794,12 @@ function renderFeed(){
     const bc=e.outcome==='FACE_SUCCESS'?'badge-success':e.outcome==='MISSED'?'badge-missed':'badge-warn';
     const conf=e.confidence?`<span class="conf-bar"><span class="conf-fill" style="width:${e.confidence*100}%;background:${confColor(e.confidence)}"></span></span> ${(e.confidence*100).toFixed(0)}%`:'—';
     const safeE=encodeURIComponent(JSON.stringify(e));
+    const faceThumb = e.faceImage
+      ? `<img src="data:image/jpeg;base64,${e.faceImage}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px;flex-shrink:0">`
+      : '';
     return `<div class="feed-item" onclick="openFeedEvent('${safeE}')">
-      <div class="fi-top">
+      <div class="fi-top" style="display:flex;align-items:center;gap:5px">
+        ${faceThumb}
         <span class="fi-badge ${bc}">${e.outcome}</span>
         <span style="font-size:10px;color:var(--text2)">${e.eventType}</span>
         <span class="fi-time">${timeStr(e.timestamp)}</span>
@@ -870,8 +889,14 @@ function renderAgentTable(filter){
   tbody.innerHTML=rows.map(([id,s])=>{
     const avgC=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
     const cls=s.miss>0||s.fail>0?'pill-miss':s.pass===s.total?'pill-pass':'pill-warn';
-    return `<tr style="cursor:pointer" onclick="showEventDetail({individualId:'${id}',eventType:'',responseType:'',outcome:'',confidence:${avgC},failedAttemptCount:0,timestamp:'${s.last||''}',lat:0,lng:0,locationAccuracy:0,boundaryCode:null,anomalyFlags:null,deviceId:null,popupTime:null,responseTime:null,tenantId:'ba'});switchTabDirect('map')">
-      <td>${shortId(id)}</td>
+    // Get most recent face image for this agent
+    const agentEvents = filteredEvents.filter(e=>e.individualId===id && e.faceImage);
+    const latestFace = agentEvents.length ? agentEvents[agentEvents.length-1].faceImage : null;
+    const faceAvatar = latestFace
+      ? `<img src="data:image/jpeg;base64,${latestFace}" class="face-thumb-sm" alt="face">`
+      : `<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:28px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>`;
+    return `<tr style="cursor:pointer" onclick="showEventDetail({individualId:'${id}',eventType:'',responseType:'',outcome:'',confidence:${avgC},failedAttemptCount:0,timestamp:'${s.last||''}',lat:0,lng:0,locationAccuracy:0,boundaryCode:null,anomalyFlags:null,deviceId:null,faceImage:${latestFace?`'${latestFace}'`:'null'},popupTime:null,responseTime:null,tenantId:'ba'});switchTabDirect('map')">
+      <td>${faceAvatar}${shortId(id)}</td>
       <td>${s.total}</td>
       <td><span class="pill ${cls}">${s.pass}/${s.total}</span></td>
       <td>${s.miss}</td>
