@@ -621,14 +621,7 @@ function confColor(c){
   if(c>0)     return '#A32D2D';
   return '#9ca3af';
 }
-function outcomeColor(o){
-  if(o==='FACE_SUCCESS')  return '#0F6E56';
-  if(o==='MISSED')        return '#A32D2D';
-  if(o==='FACE_FAIL')     return '#854F0B';
-  if(o==='FACE_REJECTED') return '#dc6f00';
-  if(o==='PIN_FALLBACK')  return '#854F0B';
-  return '#185FA5';
-}
+
 function shortId(id){ return id ? id.slice(0,8)+'…' : '—'; }
 function timeStr(ts){
   if(!ts) return '—';
@@ -1383,13 +1376,15 @@ function renderAnalytics(){
   document.getElementById('a-dimensions').innerHTML = dims.map(d=>{
     const col = d.score>=d.threshold?'#0F6E56':d.score>=d.threshold*0.7?'#854F0B':'#A32D2D';
     const flag = d.score<d.threshold ? ' ⚠' : '';
-    return '<div class="dim-row" onclick="toggleDimDetail(''+d.id+'')"><div class="dim-score" style="color:'+col+'">'+d.score+'</div>'
-      +'<div class="dim-label">'+d.label+'<span class="dim-flag">'+flag+'</span></div>'
-      +'<div class="dim-bar"><div class="dim-fill" style="width:'+d.score+'%;background:'+col+'"></div></div>'
-      +'<span style="font-size:10px;color:var(--text3);flex-shrink:0;width:28px;text-align:right">'+d.w+'</span>'
-      +'<span class="expand-btn">▾</span>'
-      +'</div>'
-      +'<div class="dim-detail" id="dim-'+d.id+'" style="padding-left:44px;color:var(--text2)">'+d.detail+'</div>';
+    const safeId = d.id;
+    return `<div class="dim-row" onclick="toggleDimDetail('${safeId}')" style="cursor:pointer">
+      <div class="dim-score" style="color:${col}">${d.score}</div>
+      <div class="dim-label">${d.label}<span class="dim-flag">${flag}</span></div>
+      <div class="dim-bar"><div class="dim-fill" style="width:${d.score}%;background:${col}"></div></div>
+      <span style="font-size:10px;color:var(--text3);flex-shrink:0;width:28px;text-align:right">${d.w}</span>
+      <span class="expand-btn">▾</span>
+    </div>
+    <div class="dim-detail" id="dim-${safeId}" style="padding-left:44px;color:var(--text2)">${d.detail}</div>`;
   }).join('');
 
   // ── Section A: Reliability ──
