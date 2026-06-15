@@ -40,7 +40,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .topbar-left h1{font-size:14px;font-weight:600}
 .topbar-left p{font-size:11px;opacity:.65;margin-top:2px}
 .live-dot{width:7px;height:7px;border-radius:50%;background:#5DCAA5;display:inline-block;margin-right:5px;animation:pulse 1.5s ease-in-out infinite}
-.live-dot.red{background:#ef4444;animation:none}
+.live-dot.red{background:#A32D2D;animation:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .topbar-right select{font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer}
@@ -134,6 +134,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 /* Last updated pill */
 .updated-pill{font-size:10px;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:20px;color:rgba(255,255,255,.7);white-space:nowrap}
 
+.feed-toggle{font-size:11px;padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
+.feed-toggle:hover{background:var(--bg3)}
+.active-toggle{background:var(--navy);color:#fff;border-color:var(--navy)}
 .face-marker{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer}
 input[type=date]::-webkit-inner-spin-button{display:none}
@@ -141,6 +144,64 @@ input[type=date]::-webkit-inner-spin-button{display:none}
 .face-thumb-lg{width:88px;height:88px;border-radius:8px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}
 .face-thumb-sm{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px}
 .no-face{width:56px;height:56px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--text3)}
+
+/* ── Unified colour palette ── */
+:root{
+  --c-success:#0F6E56; --c-success-l:#E1F5EE;
+  --c-miss:#A32D2D;    --c-miss-l:#FDECEA;
+  --c-pin:#5B3A8C;     --c-pin-l:#F0EBFF;
+  --c-reject:#C2400C;  --c-reject-l:#FEE8DF;
+  --c-lowconf:#854F0B; --c-lowconf-l:#FFF3CD;
+  --c-info:#185FA5;    --c-info-l:#E6F1FB;
+}
+
+/* ── L2 inline panel ── */
+.l2-panel{display:none;border-bottom:.5px solid var(--border);background:var(--bg2);animation:slideDown .2s ease}
+.l2-panel.open{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.l2-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 14px}
+.l2-inner.cols2{grid-template-columns:repeat(2,1fr)}
+.l2-card{background:var(--bg);border:.5px solid var(--border);border-radius:8px;padding:10px 12px}
+.l2-card-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.l2-big{font-size:22px;font-weight:600;margin-bottom:2px}
+.l2-sub{font-size:10px;color:var(--text3)}
+.l2-close{float:right;font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;font-weight:500;margin-top:-2px}
+.mc.active-l2{background:var(--navy)!important;color:#fff}
+.mc.active-l2 .mc-label,.mc.active-l2 .mc-sub{color:rgba(255,255,255,.6)}
+.mc.active-l2 .mc-val{color:#fff}
+
+/* ── Agent filter banner ── */
+.agent-filter-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:#E6F1FB;border-bottom:.5px solid var(--border);font-size:12px;color:var(--navy);flex-shrink:0}
+.agent-filter-bar.show{display:flex}
+.agent-filter-bar button{font-size:11px;padding:2px 8px;border-radius:20px;border:.5px solid var(--navy);background:transparent;color:var(--navy);cursor:pointer;margin-left:auto}
+
+/* ── Improved map markers ── */
+.mk{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);cursor:pointer;transition:transform .1s}
+.mk:hover{transform:scale(1.3)}
+.mk-success{background:var(--c-success)}
+.mk-miss{background:var(--c-miss)}
+.mk-pin{background:var(--c-pin)}
+.mk-reject{background:var(--c-reject)}
+.mk-info{background:var(--c-info)}
+.leaflet-popup-content-wrapper{border-radius:8px!important;box-shadow:0 4px 16px rgba(0,0,0,.15)!important}
+.leaflet-popup-content{margin:10px 12px!important}
+
+/* ── Analytics score card ── */
+.score-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border:4px solid;margin:0 auto 8px}
+.dim-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border);cursor:pointer}
+.dim-row:last-child{border-bottom:none}
+.dim-row:hover{background:var(--bg3);margin:0 -12px;padding-left:12px;padding-right:12px}
+.dim-score{font-size:13px;font-weight:600;width:36px;flex-shrink:0;text-align:right}
+.dim-label{flex:1;font-size:12px}
+.dim-bar{width:80px;height:5px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
+.dim-fill{height:100%;border-radius:2px}
+.dim-flag{font-size:10px;color:var(--c-miss);margin-left:4px}
+.expand-btn{font-size:10px;color:var(--blue);cursor:pointer;flex-shrink:0}
+.dim-detail{display:none;padding:8px 0 4px;font-size:11px;color:var(--text2)}
+.dim-detail.open{display:block}
+.risk-flag{display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border);font-size:11px}
+.risk-flag:last-child{border-bottom:none}
+.risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
 </style>
 </head>
 <body>
@@ -210,35 +271,35 @@ input[type=date]::-webkit-inner-spin-button{display:none}
 
 <!-- L1 Metrics -->
 <div class="metric-strip">
-  <div class="mc active" id="mc-pass" onclick="setMapLayer('pass',this)">
+  <div class="mc active" id="mc-pass" onclick="toggleL2('pass',this)">
     <div class="mc-label">Verif. pass rate</div>
     <div class="mc-val" id="m-pass">—</div>
     <div class="mc-sub" id="m-pass-sub">RE_VERIFY events</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-pass" style="background:#22c55e"></div></div>
+    <div class="mc-bar"><div class="mc-fill" id="mb-pass" style="background:#0F6E56"></div></div>
   </div>
-  <div class="mc" id="mc-login" onclick="setMapLayer('login',this)">
+  <div class="mc" id="mc-login" onclick="toggleL2('login',this)">
     <div class="mc-label">Login pass rate</div>
     <div class="mc-val" id="m-login">—</div>
     <div class="mc-sub" id="m-login-sub">LOGIN events</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-login" style="background:#185FA5"></div></div>
   </div>
-  <div class="mc" id="mc-checkin">
+  <div class="mc" id="mc-pin" onclick="toggleL2('pin',this)"><div class="mc-label">PIN fallback rate</div><div class="mc-val" id="m-pin">—</div><div class="mc-sub" id="m-pin-sub">of all events</div><div class="mc-bar"><div class="mc-fill" id="mb-pin" style="background:#5B3A8C"></div></div></div><div class="mc" id="mc-checkin">
     <div class="mc-label">Check-in pass</div>
     <div class="mc-val" id="m-checkin">—</div>
     <div class="mc-sub" id="m-checkin-sub">CHECK_IN events</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-checkin" style="background:#0F6E56"></div></div>
   </div>
-  <div class="mc" id="mc-conf" onclick="setMapLayer('conf',this)">
+  <div class="mc" id="mc-conf" onclick="toggleL2('conf',this)">
     <div class="mc-label">Avg confidence</div>
     <div class="mc-val" id="m-conf">—</div>
     <div class="mc-sub">Threshold ≥ 0.75</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-conf" style="background:#854F0B"></div></div>
   </div>
-  <div class="mc" id="mc-miss" onclick="setMapLayer('miss',this)">
+  <div class="mc" id="mc-miss" onclick="toggleL2('miss',this)">
     <div class="mc-label">Missed / timeout</div>
     <div class="mc-val" id="m-miss">—</div>
     <div class="mc-sub" id="m-miss-sub">RE_VERIFY timeouts</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-miss" style="background:#ef4444"></div></div>
+    <div class="mc-bar"><div class="mc-fill" id="mb-miss" style="background:#A32D2D"></div></div>
   </div>
   <div class="mc" id="mc-agents">
     <div class="mc-label">Unique agents</div>
@@ -246,6 +307,22 @@ input[type=date]::-webkit-inner-spin-button{display:none}
     <div class="mc-sub" id="m-agents-sub">in filtered view</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-agents" style="background:#0F6E56;width:100%"></div></div>
   </div>
+</div>
+
+
+<!-- L2 inline panel (slides open below metric strip) -->
+<div class="l2-panel" id="l2-panel">
+  <div style="padding:6px 14px 0;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:11px;font-weight:600;color:var(--text2)" id="l2-title">Detail</span>
+    <button class="l2-close" onclick="closeL2()">✕ Close</button>
+  </div>
+  <div class="l2-inner" id="l2-body"></div>
+</div>
+
+<!-- Agent filter banner -->
+<div class="agent-filter-bar" id="agent-filter-bar">
+  <span>👤 Showing events for: <strong id="agent-filter-name"></strong></span>
+  <button onclick="clearAgentFilter()">✕ Show all agents</button>
 </div>
 
 <!-- MAP SCREEN -->
@@ -261,8 +338,8 @@ input[type=date]::-webkit-inner-spin-button{display:none}
       <div class="map-legend">
         <div class="legend-title" id="legend-title">Event outcome</div>
         <div id="legend-body">
-          <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div>Face success</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div>Missed / timeout</div>
+          <div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>Face success</div>
+          <div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>Missed / timeout</div>
           <div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>PIN fallback</div>
           <div class="legend-row"><div class="legend-swatch" style="background:#dc6f00"></div>Face rejected</div>
           <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>
@@ -303,33 +380,60 @@ input[type=date]::-webkit-inner-spin-button{display:none}
 
 <!-- FEED SCREEN -->
 <div id="screen-feed" class="screen">
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--border);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:11px;color:var(--text2);font-weight:500">Show:</span>
+    <button id="feed-all-btn" class="feed-toggle active-toggle" onclick="setFeedView('all',this)">All events</button>
+    <button id="feed-latest-btn" class="feed-toggle" onclick="setFeedView('latest',this)">Latest per agent</button>
+    <button id="feed-fails-btn" class="feed-toggle" onclick="setFeedView('fails',this)">Failures only</button>
+    <span id="feed-count" style="margin-left:auto;font-size:10px;color:var(--text3)"></span>
+  </div>
   <div class="scroll-body" id="feed-body"><div class="empty">Loading…</div></div>
 </div>
 
 <!-- ANALYTICS SCREEN -->
 <div id="screen-analytics" class="screen">
   <div class="scroll-body">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <!-- System readiness score -->
+    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+      <div class="bs-title" style="margin-bottom:10px">System readiness score</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div id="a-score-ring" class="score-ring" style="border-color:#ccc;color:#ccc">—</div>
+        <div style="flex:1">
+          <div id="a-score-label" style="font-size:12px;color:var(--text2);margin-bottom:6px">Calculating…</div>
+          <div id="a-score-flags" style="font-size:11px;color:var(--c-miss)"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Dimensions -->
+    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+      <div class="bs-title" style="margin-bottom:4px">Score breakdown — click to expand</div>
+      <div id="a-dimensions"></div>
+    </div>
+    <!-- Two column sections -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">Outcome breakdown</div>
-        <div id="a-outcome"><div class="empty">Loading…</div></div>
+        <div class="bs-title">A — Reliability</div>
+        <div id="a-reliability"><div class="empty">Loading…</div></div>
       </div>
       <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">Event type split</div>
-        <div id="a-eventtype"><div class="empty">Loading…</div></div>
+        <div class="bs-title">B — Equity (confidence)</div>
+        <div id="a-equity"><div class="empty">Loading…</div></div>
       </div>
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px;grid-column:1/-1">
-        <div class="bs-title">Confidence score distribution</div>
-        <div id="a-conf"><div class="empty">Loading…</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+        <div class="bs-title">C — Attendance picture</div>
+        <div id="a-attendance"><div class="empty">Loading…</div></div>
       </div>
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px;grid-column:1/-1">
-        <div class="bs-title">Per-agent summary</div>
-        <div id="a-agents"><div class="empty">Loading…</div></div>
+      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+        <div class="bs-title">D — Risk flags</div>
+        <div id="a-risks"><div class="empty">Loading…</div></div>
       </div>
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px;grid-column:1/-1">
-        <div class="bs-title">Boundary / LGA breakdown <span style="font-weight:400;color:var(--text3)">(from boundaryCode field)</span></div>
-        <div id="a-boundary"><div class="empty">No boundaryCode data yet — will populate automatically once field is populated in events.</div></div>
-      </div>
+    </div>
+    <!-- Boundary -->
+    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div class="bs-title">LGA breakdown <span style="font-weight:400;color:var(--text3)">(populates when boundaryCode set)</span></div>
+      <div id="a-boundary"><div class="empty">No boundaryCode data yet.</div></div>
     </div>
   </div>
 </div>
@@ -347,6 +451,45 @@ let mapView = 'events';
 let selectedItem = null;
 let map, dotLayer, choroLayer;
 let isLoading = false;
+let feedView = 'all'; // 'all' | 'latest' | 'fails'
+let activeAgentFilter = null; // individualId or null
+let activeL2 = null; // which metric card is expanded
+
+/* ── Response time helper ── */
+function parseResponseSecs(rt) {
+  // Format: '1970-01-01 00:00:52' → 52 seconds
+  if (!rt) return null;
+  try {
+    const parts = rt.split(' ');
+    if (parts.length < 2) return null;
+    const timeParts = parts[1].split(':').map(Number);
+    return timeParts[0]*3600 + timeParts[1]*60 + timeParts[2];
+  } catch { return null; }
+}
+
+/* ── Outcome colour — unified palette ── */
+function outcomeColor(o){
+  if(o==='FACE_SUCCESS')  return '#0F6E56';
+  if(o==='MISSED')        return '#A32D2D';
+  if(o==='PIN_FALLBACK')  return '#5B3A8C';
+  if(o==='FACE_REJECTED') return '#C2400C';
+  if(o==='FACE_FAIL')     return '#854F0B';
+  return '#185FA5';
+}
+
+/* ── Agent filter ── */
+function filterByAgent(id) {
+  activeAgentFilter = id;
+  const banner = document.getElementById('agent-filter-bar');
+  banner.classList.add('show');
+  document.getElementById('agent-filter-name').textContent = shortId(id);
+  applyFilters();
+}
+function clearAgentFilter() {
+  activeAgentFilter = null;
+  document.getElementById('agent-filter-bar').classList.remove('show');
+  applyFilters();
+}
 
 const AGENT_FACE = {};
 function cacheImages(events) {
@@ -473,15 +616,15 @@ function hideLoading() {
    ═══════════════════════════════════════════════ */
 function pct(n,d){ return d ? Math.round(n/d*100) : 0; }
 function confColor(c){
-  if(c>=0.85) return '#22c55e';
-  if(c>=0.75) return '#f59e0b';
-  if(c>0)     return '#ef4444';
+  if(c>=0.85) return '#0F6E56';
+  if(c>=0.75) return '#854F0B';
+  if(c>0)     return '#A32D2D';
   return '#9ca3af';
 }
 function outcomeColor(o){
-  if(o==='FACE_SUCCESS')  return '#22c55e';
-  if(o==='MISSED')        return '#ef4444';
-  if(o==='FACE_FAIL')     return '#f59e0b';
+  if(o==='FACE_SUCCESS')  return '#0F6E56';
+  if(o==='MISSED')        return '#A32D2D';
+  if(o==='FACE_FAIL')     return '#854F0B';
   if(o==='FACE_REJECTED') return '#dc6f00';
   if(o==='PIN_FALLBACK')  return '#854F0B';
   return '#185FA5';
@@ -553,14 +696,15 @@ function agentStats(events){
 function applyFilters(){
   const et   = document.getElementById('filter-event').value;
   const oc   = document.getElementById('filter-outcome').value;
-  const from = document.getElementById('date-from').value;   // 'YYYY-MM-DD' or ''
+  const from = document.getElementById('date-from').value;
   const to   = document.getElementById('date-to').value;
 
   filteredEvents = RAW_EVENTS.filter(e=>{
     if(et!=='ALL' && e.eventType!==et) return false;
     if(oc!=='ALL' && e.outcome!==oc)   return false;
+    if(activeAgentFilter && e.individualId !== activeAgentFilter) return false;
     if(e.timestamp){
-      const evDate = e.timestamp.slice(0,10); // 'YYYY-MM-DD'
+      const evDate = e.timestamp.slice(0,10);
       if(from && evDate < from) return false;
       if(to   && evDate > to)   return false;
     }
@@ -609,38 +753,257 @@ function updateMetricStrip(){
   setEl('m-pass', a.reverify ? a.rvPassRate+'%' : '—');
   setEl('m-pass-sub', a.reverify+' RE_VERIFY events');
   setStyle('mb-pass','width', a.rvPassRate+'%');
-  setStyle('mb-pass','background', a.rvPassRate>=75?'#22c55e':'#ef4444');
+  setStyle('mb-pass','background', a.rvPassRate>=75?'#0F6E56':'#A32D2D');
   setEl('m-login', a.login ? a.lgPassRate+'%' : '—');
   setEl('m-login-sub', a.login+' LOGIN events');
   setStyle('mb-login','width', a.lgPassRate+'%');
-  setStyle('mb-login','background','#185FA5');
+  setStyle('mb-login','background', a.lgPassRate>=85?'#0F6E56':'#854F0B');
   setEl('m-checkin', a.checkin ? a.ciPassRate+'%' : '—');
   setEl('m-checkin-sub', a.checkin+' CHECK_IN events');
   setStyle('mb-checkin','width', a.ciPassRate+'%');
-  setStyle('mb-checkin','background', a.ciPassRate>=75?'#0F6E56':'#ef4444');
+  setStyle('mb-checkin','background', a.ciPassRate>=75?'#0F6E56':'#A32D2D');
   setEl('m-conf', a.avgConf ? (a.avgConf*100).toFixed(1)+'%' : '—');
   setStyle('mb-conf','width',(a.avgConf*100)+'%');
   setStyle('mb-conf','background',confColor(a.avgConf));
   setEl('m-miss', a.reverify ? a.missRate+'%' : '—');
   setStyle('mb-miss','width', a.missRate+'%');
-  setStyle('mb-miss','background','#ef4444');
+  setStyle('mb-miss','background','#A32D2D');
+  // PIN card
+  setEl('m-pin', a.total ? a.pinRate+'%' : '—');
+  setEl('m-pin-sub', a.pinFall+' PIN fallbacks');
+  setStyle('mb-pin','width', a.pinRate+'%');
+  setStyle('mb-pin','background','#5B3A8C');
   setEl('m-agents', a.agents);
+}
+
+
+/* ═══════════════════════════════════════════════
+   L2 INLINE DRILL-DOWN
+   ═══════════════════════════════════════════════ */
+function toggleL2(metric, el) {
+  const panel = document.getElementById('l2-panel');
+  if (activeL2 === metric) {
+    closeL2(); return;
+  }
+  activeL2 = metric;
+  document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active-l2'));
+  el.classList.add('active-l2');
+  panel.classList.add('open');
+  renderL2(metric);
+}
+
+function closeL2() {
+  activeL2 = null;
+  document.getElementById('l2-panel').classList.remove('open');
+  document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active-l2'));
+}
+
+function l2Bar(label, val, max, color, isPct=false) {
+  const w = max ? Math.min(100, Math.round(val/max*100)) : 0;
+  const display = isPct ? val+'%' : val;
+  return `<div class="bar-row">
+    <span class="bar-label" style="width:100px">${label}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
+    <span class="bar-val">${display}</span>
+  </div>`;
+}
+
+function renderL2(metric) {
+  const ev = filteredEvents;
+  const titles = {
+    pass:'RE_VERIFY — deep dive',
+    login:'Login — deep dive',
+    conf:'Confidence — deep dive',
+    miss:'Missed / timeout — deep dive',
+    pin:'PIN fallback — deep dive'
+  };
+  document.getElementById('l2-title').textContent = titles[metric]||metric;
+
+  const body = document.getElementById('l2-body');
+
+  if (metric === 'pass') {
+    const rv = ev.filter(e=>e.eventType==='RE_VERIFY');
+    const pass = rv.filter(e=>e.outcome==='FACE_SUCCESS');
+    const miss = rv.filter(e=>e.outcome==='MISSED');
+    const pin  = rv.filter(e=>e.outcome==='PIN_FALLBACK');
+    // Avg attempts for success (failedAttemptCount + 1)
+    const attempts = pass.map(e=>(e.failedAttemptCount||0)+1);
+    const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
+    const first = attempts.filter(a=>a===1).length;
+    const second = attempts.filter(a=>a===2).length;
+    const third = attempts.filter(a=>a>=3).length;
+    // Response duration
+    const durations = rv.filter(e=>e.responseTime).map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+    const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
+    const passD  = pass.filter(e=>e.responseTime).map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+    const avgPassDur = passD.length ? Math.round(passD.reduce((a,b)=>a+b,0)/passD.length) : null;
+
+    body.className = 'l2-inner';
+    body.innerHTML = `
+      <div class="l2-card">
+        <div class="l2-card-title">Outcome split</div>
+        ${l2Bar('Pass',pass.length,rv.length,'#0F6E56')}
+        ${l2Bar('Missed',miss.length,rv.length,'#A32D2D')}
+        ${l2Bar('PIN fallback',pin.length,rv.length,'#5B3A8C')}
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Attempts before success</div>
+        <div class="l2-big" style="color:#0F6E56">${avgAttempts}</div>
+        <div class="l2-sub">avg attempts (success events)</div>
+        <div style="margin-top:8px">
+          ${l2Bar('1st attempt',first,pass.length,'#0F6E56')}
+          ${l2Bar('2nd attempt',second,pass.length,'#854F0B')}
+          ${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
+        </div>
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Response duration (popup→done)</div>
+        <div class="l2-big" style="color:#185FA5">${avgDur !== null ? avgDur+'s' : '—'}</div>
+        <div class="l2-sub">avg across all RE_VERIFY</div>
+        <div style="margin-top:6px;font-size:11px;color:var(--text2)">
+          <div>✓ Pass avg: <b>${avgPassDur !== null ? avgPassDur+'s' : '—'}</b></div>
+          <div>Total with response: <b>${durations.length}</b></div>
+          <div>No response (timeout): <b>${rv.length - durations.length}</b></div>
+        </div>
+      </div>`;
+  }
+
+  else if (metric === 'login') {
+    const lg = ev.filter(e=>e.eventType==='LOGIN');
+    const pass = lg.filter(e=>e.outcome==='FACE_SUCCESS');
+    const pin  = lg.filter(e=>e.outcome==='PIN_FALLBACK');
+    const fail = lg.filter(e=>e.outcome==='FACE_FAIL'||e.outcome==='FACE_REJECTED');
+    const attempts = pass.map(e=>(e.failedAttemptCount||0)+1);
+    const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
+    const first = attempts.filter(a=>a===1).length;
+    const second = attempts.filter(a=>a===2).length;
+    const third = attempts.filter(a=>a>=3).length;
+    // Per agent pass rate
+    const byAgent = {};
+    lg.forEach(e=>{ if(!byAgent[e.individualId]) byAgent[e.individualId]={t:0,p:0}; byAgent[e.individualId].t++; if(e.outcome==='FACE_SUCCESS') byAgent[e.individualId].p++; });
+    const worstAgents = Object.entries(byAgent).filter(([,s])=>s.t>1).sort((a,b)=>pct(a[1].p,a[1].t)-pct(b[1].p,b[1].t)).slice(0,3);
+
+    body.className = 'l2-inner';
+    body.innerHTML = `
+      <div class="l2-card">
+        <div class="l2-card-title">Outcome split</div>
+        ${l2Bar('Face pass',pass.length,lg.length,'#0F6E56')}
+        ${l2Bar('PIN fallback',pin.length,lg.length,'#5B3A8C')}
+        ${l2Bar('Failed',fail.length,lg.length,'#A32D2D')}
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Attempts before success</div>
+        <div class="l2-big" style="color:#0F6E56">${avgAttempts}</div>
+        <div class="l2-sub">avg attempts</div>
+        <div style="margin-top:8px">
+          ${l2Bar('1st attempt',first,pass.length,'#0F6E56')}
+          ${l2Bar('2nd attempt',second,pass.length,'#854F0B')}
+          ${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
+        </div>
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Lowest login pass rate</div>
+        ${worstAgents.map(([id,s])=>l2Bar(shortId(id),pct(s.p,s.t),100,pct(s.p,s.t)>=75?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
+        <div class="l2-sub" style="margin-top:6px">agents with >1 login</div>
+      </div>`;
+  }
+
+  else if (metric === 'conf') {
+    const face = ev.filter(e=>e.confidence>0);
+    const buckets = [
+      {label:'≥ 85%', min:0.85, max:1.01, color:'#0F6E56'},
+      {label:'75–84%',min:0.75, max:0.85,  color:'#854F0B'},
+      {label:'50–74%',min:0.50, max:0.75,  color:'#C2400C'},
+      {label:'< 50%', min:0,    max:0.50,  color:'#A32D2D'},
+    ];
+    const counts = buckets.map(b=>({...b, count: face.filter(e=>e.confidence>=b.min && e.confidence<b.max).length}));
+    const below = face.filter(e=>e.confidence<0.75);
+    const byAgent = {};
+    face.forEach(e=>{
+      if(!byAgent[e.individualId]) byAgent[e.individualId]=[];
+      byAgent[e.individualId].push(e.confidence);
+    });
+    const agentAvgs = Object.entries(byAgent).map(([id,cs])=>({id,avg:cs.reduce((a,b)=>a+b,0)/cs.length})).sort((a,b)=>a.avg-b.avg).slice(0,4);
+
+    body.className = 'l2-inner cols2';
+    body.innerHTML = `
+      <div class="l2-card">
+        <div class="l2-card-title">Score distribution</div>
+        ${counts.map(b=>l2Bar(b.label,b.count,face.length,b.color)).join('')}
+        <div class="l2-sub" style="margin-top:6px">${face.length} face scans total</div>
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Lowest avg confidence agents</div>
+        ${agentAvgs.map(a=>l2Bar(shortId(a.id),Math.round(a.avg*100),100,a.avg>=0.75?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
+        <div class="l2-sub" style="margin-top:6px">${below.length} scans below 0.75 threshold</div>
+      </div>`;
+  }
+
+  else if (metric === 'miss') {
+    const rv = ev.filter(e=>e.eventType==='RE_VERIFY');
+    const miss = rv.filter(e=>e.outcome==='MISSED');
+    const byAgent = {};
+    miss.forEach(e=>{ byAgent[e.individualId]=(byAgent[e.individualId]||0)+1; });
+    const topMiss = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    // Time of day distribution
+    const hours = {};
+    miss.forEach(e=>{
+      if(e.timestamp){ const h = parseInt(e.timestamp.slice(11,13)); hours[h]=(hours[h]||0)+1; }
+    });
+    const topHours = Object.entries(hours).sort((a,b)=>b[1]-a[1]).slice(0,4);
+
+    body.className = 'l2-inner cols2';
+    body.innerHTML = `
+      <div class="l2-card">
+        <div class="l2-card-title">Agents with most misses</div>
+        ${topMiss.map(([id,n])=>l2Bar(shortId(id),n,miss.length,'#A32D2D')).join('')||'<div class="empty">No misses</div>'}
+        <div class="l2-sub" style="margin-top:6px">${miss.length} total timeouts</div>
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Misses by hour of day</div>
+        ${topHours.map(([h,n])=>l2Bar(h+':00',n,miss.length,'#854F0B')).join('')||'<div class="empty">—</div>'}
+        <div class="l2-sub" style="margin-top:6px">Top 4 hours with most misses</div>
+      </div>`;
+  }
+
+  else if (metric === 'pin') {
+    const pins = ev.filter(e=>e.outcome==='PIN_FALLBACK');
+    const loginPins = pins.filter(e=>e.eventType==='LOGIN');
+    const rvPins    = pins.filter(e=>e.eventType==='RE_VERIFY');
+    const byAgent = {};
+    pins.forEach(e=>{ byAgent[e.individualId]=(byAgent[e.individualId]||0)+1; });
+    const topPin = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]).slice(0,4);
+
+    body.className = 'l2-inner cols2';
+    body.innerHTML = `
+      <div class="l2-card">
+        <div class="l2-card-title">PIN by event type</div>
+        ${l2Bar('Login PIN',loginPins.length,pins.length,'#5B3A8C')}
+        ${l2Bar('RE_VERIFY PIN',rvPins.length,pins.length,'#5B3A8C')}
+        <div class="l2-sub" style="margin-top:6px">${pins.length} total PIN fallbacks</div>
+      </div>
+      <div class="l2-card">
+        <div class="l2-card-title">Agents using PIN most</div>
+        ${topPin.map(([id,n])=>l2Bar(shortId(id),n,pins.length,'#5B3A8C')).join('')||'<div class="empty">No PIN events</div>'}
+      </div>`;
+  }
 }
 
 /* ═══════════════════════════════════════════════
    MAP
    ═══════════════════════════════════════════════ */
 function initMap(){
-  map = L.map('map',{zoomControl:true}).setView([10.35,9.9],9);
+  // Centre on real event cluster (Abuja/FCT area)
+  map = L.map('map',{zoomControl:true}).setView([9.08, 7.46], 11);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-    attribution:'© OpenStreetMap © Carto',maxZoom:18
+    attribution:'© OpenStreetMap © Carto', maxZoom:18
   }).addTo(map);
 
   choroLayer = L.geoJSON(GEOJSON,{
     style: f => lgaStyle(f),
     onEachFeature: (f,l) => {
       l.on('click', ()=> selectLGA(f,l));
-      l.bindTooltip(f.properties.name+' LGA',{sticky:true});
+      l.bindTooltip(f.properties.name+' LGA',{sticky:true,className:'leaflet-tooltip'});
     }
   }).addTo(map);
 
@@ -661,7 +1024,7 @@ function lgaStyle(feature){
   if(mapLayer==='conf')  rate = Math.round(a.avgConf*100);
   if(mapLayer==='miss')  rate = a.missRate;
   const noData = lgEvents.length===0;
-  const fill = noData?'#e5e7eb':rate>=75?'#22c55e':rate>=50?'#f59e0b':'#ef4444';
+  const fill = noData?'#e5e7eb':rate>=75?'#0F6E56':rate>=50?'#854F0B':'#A32D2D';
   return {fillColor:fill, weight:1.5, opacity:1, color:'#fff', fillOpacity:noData?0.2:0.65};
 }
 
@@ -669,20 +1032,39 @@ function lgaStyle(feature){
 const MOCK_LGA_MAP = {};
 function mockLGA(id){ return MOCK_LGA_MAP[id] || null; }
 
+function markerClass(outcome){
+  if(outcome==='FACE_SUCCESS')  return 'mk mk-success';
+  if(outcome==='MISSED')        return 'mk mk-miss';
+  if(outcome==='PIN_FALLBACK')  return 'mk mk-pin';
+  if(outcome==='FACE_REJECTED') return 'mk mk-reject';
+  return 'mk mk-info';
+}
+
 function updateMapDots(){
   dotLayer.clearLayers();
   const valid = filteredEvents.filter(e=>e.lat && e.lng && Math.abs(e.lat)>0.1 && Math.abs(e.lng)>0.1);
+  // Group by location to stack nearby dots
   valid.forEach(e=>{
-    const color = outcomeColor(e.outcome);
     const icon = L.divIcon({
       className:'',
-      html:`<div class="face-marker" style="background:${color}"></div>`,
-      iconSize:[14,14], iconAnchor:[7,7]
+      html:'<div class="' + markerClass(e.outcome) + '"></div>',
+      iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-10]
     });
     const m = L.marker([e.lat,e.lng],{icon}).addTo(dotLayer);
-    m.bindPopup(popupHTML(e));
-    m.on('click',()=>showEventDetail(e));
+    m.bindPopup(popupHTML(e), {maxWidth:220});
+    m.on('click',()=>{
+      showEventDetail(e);
+      // If agent filter active, pan to this dot
+      if(activeAgentFilter) map.panTo([e.lat, e.lng]);
+    });
   });
+  // If events exist and no specific view, fit map to dots
+  if(valid.length && !activeAgentFilter){
+    const lats = valid.map(e=>e.lat);
+    const lngs = valid.map(e=>e.lng);
+    const bounds = [[Math.min(...lats),Math.min(...lngs)],[Math.max(...lats),Math.max(...lngs)]];
+    try { map.fitBounds(bounds, {padding:[30,30], maxZoom:14}); } catch{}
+  }
 }
 
 function updateMap(){
@@ -735,16 +1117,17 @@ function updateLegend(){
   document.getElementById('legend-title').textContent = mapView==='events'?'Event outcome':t[mapLayer];
   if(mapView!=='events'){
     document.getElementById('legend-body').innerHTML=`
-      <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div>≥ 75%</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f59e0b"></div>50–74%</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div>< 50%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>≥ 75%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>50–74%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>< 50%</div>
       <div class="legend-row"><div class="legend-swatch" style="background:#e5e7eb"></div>No data</div>`;
   } else {
     document.getElementById('legend-body').innerHTML=`
-      <div class="legend-row"><div class="legend-swatch" style="background:#22c55e"></div>Face success</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div>Missed</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#f59e0b"></div>Failed</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login</div>`;
+      <div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>Face success</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>Missed / timeout</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#5B3A8C"></div>PIN fallback</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#C2400C"></div>Face rejected</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>`;
   }
 }
 
@@ -860,12 +1243,36 @@ function clearSelection(){
 /* ═══════════════════════════════════════════════
    EVENT FEED
    ═══════════════════════════════════════════════ */
+function setFeedView(view, btn) {
+  feedView = view;
+  document.querySelectorAll('.feed-toggle').forEach(b => b.classList.remove('active-toggle'));
+  btn.classList.add('active-toggle');
+  renderFeed();
+}
+
 function renderFeed(){
-  // Deduplicate by event id before rendering
+  // Deduplicate by event id
   const seen = new Set();
-  const unique = [...filteredEvents]
+  let unique = [...filteredEvents]
     .filter(e => { if(!e.id || seen.has(e.id)){ return !e.id; } seen.add(e.id); return true; })
     .sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+
+  // Apply feed view filter
+  if (feedView === 'latest') {
+    // Keep only the most recent event per agent (already sorted desc so first wins)
+    const agentSeen = new Set();
+    unique = unique.filter(e => {
+      if (agentSeen.has(e.individualId)) return false;
+      agentSeen.add(e.individualId);
+      return true;
+    });
+  } else if (feedView === 'fails') {
+    unique = unique.filter(e => e.outcome === 'MISSED' || e.outcome === 'FACE_REJECTED' || e.outcome === 'PIN_FALLBACK');
+  }
+
+  // Update count label
+  const countEl = document.getElementById('feed-count');
+  if (countEl) countEl.textContent = unique.length + ' events';
 
   const body = document.getElementById('feed-body');
   if(!unique.length){ body.innerHTML='<div class="empty">No events match current filters.</div>'; return; }
@@ -919,42 +1326,161 @@ function openFeedEvent(encoded){
 /* ═══════════════════════════════════════════════
    ANALYTICS
    ═══════════════════════════════════════════════ */
-function renderAnalytics(){
-  const ev=filteredEvents; const total=ev.length;
-  const oc={};ev.forEach(e=>{oc[e.outcome]=(oc[e.outcome]||0)+1;});
-  document.getElementById('a-outcome').innerHTML=
-    Object.entries(oc).map(([k,v])=>barHTML(k,v,total,outcomeColor(k))).join('')||'<div class="empty">No data</div>';
-  const et={};ev.forEach(e=>{et[e.eventType]=(et[e.eventType]||0)+1;});
-  document.getElementById('a-eventtype').innerHTML=
-    Object.entries(et).map(([k,v])=>barHTML(k,v,total,'#185FA5')).join('')||'<div class="empty">No data</div>';
-  const buckets={'≥ 0.85':0,'0.75–0.84':0,'0.50–0.74':0,'< 0.50':0,'No scan':0};
-  const bColors={'≥ 0.85':'#0F6E56','0.75–0.84':'#22c55e','0.50–0.74':'#f59e0b','< 0.50':'#ef4444','No scan':'#9ca3af'};
-  ev.forEach(e=>{
-    const c=e.confidence;
-    if(!c)buckets['No scan']++;
-    else if(c>=0.85)buckets['≥ 0.85']++;
-    else if(c>=0.75)buckets['0.75–0.84']++;
-    else if(c>=0.5) buckets['0.50–0.74']++;
-    else buckets['< 0.50']++;
-  });
-  document.getElementById('a-conf').innerHTML=
-    Object.entries(buckets).map(([k,v])=>barHTML(k,v,total,bColors[k])).join('');
-  const as=agentStats(ev);
-  document.getElementById('a-agents').innerHTML=
-    Object.entries(as).map(([id,s])=>{
-      const avgC=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
-      const pr=pct(s.pass,s.total);
-      return `<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:.5px solid var(--border)">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-weight:500;font-size:12px">${shortId(id)}</span>
-          <span style="font-size:10px;color:var(--text3)">${s.total} events</span>
-        </div>
-        ${barHTML('Pass rate',pr,100,pr>=75?'#22c55e':'#ef4444',true)}
-        ${barHTML('Avg conf',Math.round(avgC*100),100,confColor(avgC),true)}
-      </div>`;
-    }).join('')||'<div class="empty">No agent data</div>';
+function toggleDimDetail(id) {
+  const el = document.getElementById('dim-'+id);
+  if(el) el.classList.toggle('open');
+}
 
-  // Boundary breakdown — only shows when boundaryCode is populated
+function renderAnalytics(){
+  const ev = filteredEvents;
+  const a  = aggregate(ev);
+  const as = agentStats(ev);
+
+  // ── Scoring ──
+  const rvScore    = Math.min(100, a.rvPassRate);   // weight 30%
+  const lgScore    = Math.min(100, a.lgPassRate);   // weight 15%
+  const missScore  = Math.max(0, 100 - a.missRate); // weight 20%
+  const confScore  = Math.min(100, Math.round(a.avgConf*100)); // weight 15%
+  const enrollRate = a.agents>0 ? pct(Object.values(as).filter(s=>s.total>0).length, a.agents) : 0;
+  const enrollScore = Math.min(100, enrollRate);     // weight 20%
+
+  const totalScore = Math.round(
+    rvScore*0.30 + lgScore*0.15 + missScore*0.20 + confScore*0.15 + enrollScore*0.20
+  );
+  const scoreColor = totalScore>=75?'#0F6E56':totalScore>=50?'#854F0B':'#A32D2D';
+
+  // Score ring
+  const ring = document.getElementById('a-score-ring');
+  ring.textContent = totalScore;
+  ring.style.borderColor = scoreColor;
+  ring.style.color = scoreColor;
+  const label = document.getElementById('a-score-label');
+  label.textContent = totalScore>=75?'System performing well — ready to assess scale decisions.'
+    :totalScore>=50?'System partially effective — key issues need resolution before scale.'
+    :'System underperforming — significant fixes required before wider deployment.';
+  label.style.color = scoreColor;
+
+  const flags = [];
+  if(a.rvPassRate<50) flags.push('⚠ RE_VERIFY pass rate critically low ('+a.rvPassRate+'%)');
+  if(a.missRate>50)   flags.push('⚠ More than half of RE_VERIFY prompts are being missed');
+  if(a.pinRate>20)    flags.push('⚠ High PIN fallback rate — face recognition unreliable');
+  if(a.avgConf<0.75)  flags.push('⚠ Average confidence below 0.75 threshold');
+  document.getElementById('a-score-flags').innerHTML = flags.join('<br>');
+
+  // ── Dimensions ──
+  const dims = [
+    {id:'rv',   label:'RE_VERIFY pass rate',  score:rvScore,    w:'30%', threshold:75,
+     detail: 'Pass: '+a.rvPass+' · Miss: '+a.missed+' · PIN: '+a.pinFall+' of '+a.reverify+' RE_VERIFY events'},
+    {id:'enr',  label:'Enrollment completeness', score:enrollScore, w:'20%', threshold:90,
+     detail: Object.values(as).filter(s=>s.total>0).length+' agents enrolled out of '+a.agents+' unique agents seen'},
+    {id:'miss', label:'Miss / timeout (inverted)', score:missScore, w:'20%', threshold:60,
+     detail: a.missed+' timeouts of '+a.reverify+' RE_VERIFY events ('+a.missRate+'% miss rate)'},
+    {id:'lg',   label:'Login pass rate',      score:lgScore,    w:'15%', threshold:85,
+     detail: a.lgPass+' successful logins of '+a.login+' total login events'},
+    {id:'conf', label:'Avg confidence score', score:confScore,  w:'15%', threshold:75,
+     detail: 'Average: '+(a.avgConf?(a.avgConf*100).toFixed(1)+'%':'—')+' across all face scans (threshold ≥ 75%)'},
+  ];
+  document.getElementById('a-dimensions').innerHTML = dims.map(d=>{
+    const col = d.score>=d.threshold?'#0F6E56':d.score>=d.threshold*0.7?'#854F0B':'#A32D2D';
+    const flag = d.score<d.threshold ? ' ⚠' : '';
+    return '<div class="dim-row" onclick="toggleDimDetail(''+d.id+'')"><div class="dim-score" style="color:'+col+'">'+d.score+'</div>'
+      +'<div class="dim-label">'+d.label+'<span class="dim-flag">'+flag+'</span></div>'
+      +'<div class="dim-bar"><div class="dim-fill" style="width:'+d.score+'%;background:'+col+'"></div></div>'
+      +'<span style="font-size:10px;color:var(--text3);flex-shrink:0;width:28px;text-align:right">'+d.w+'</span>'
+      +'<span class="expand-btn">▾</span>'
+      +'</div>'
+      +'<div class="dim-detail" id="dim-'+d.id+'" style="padding-left:44px;color:var(--text2)">'+d.detail+'</div>';
+  }).join('');
+
+  // ── Section A: Reliability ──
+  const rvTrend = {};
+  ev.filter(e=>e.eventType==='RE_VERIFY'&&e.timestamp).forEach(e=>{
+    const d=e.timestamp.slice(0,10);
+    if(!rvTrend[d]) rvTrend[d]={pass:0,total:0};
+    rvTrend[d].total++;
+    if(e.outcome==='FACE_SUCCESS') rvTrend[d].pass++;
+  });
+  const trendBars = Object.entries(rvTrend).sort().map(([d,t])=>{
+    const r=pct(t.pass,t.total);
+    return barHTML(d.slice(5),r,100,r>=75?'#0F6E56':'#A32D2D',true);
+  }).join('');
+  document.getElementById('a-reliability').innerHTML =
+    '<div class="bs-title" style="margin-bottom:6px">RE_VERIFY pass by date</div>'
+    +(trendBars||'<div class="empty">No RE_VERIFY events</div>')
+    +'<div class="divider"></div>'
+    +'<div class="bs-title" style="margin-bottom:6px">Outcome split</div>'
+    +barHTML('Face pass',a.rvPass,a.reverify||1,'#0F6E56')
+    +barHTML('Missed',a.missed,a.reverify||1,'#A32D2D')
+    +barHTML('PIN fallback',a.pinFall,a.reverify||1,'#5B3A8C');
+
+  // ── Section B: Equity ──
+  const face = ev.filter(e=>e.confidence>0);
+  const buckets = {'≥ 85%':0,'75–84%':0,'50–74%':0,'< 50%':0};
+  const bColors = {'≥ 85%':'#0F6E56','75–84%':'#854F0B','50–74%':'#C2400C','< 50%':'#A32D2D'};
+  face.forEach(e=>{
+    const c=e.confidence;
+    if(c>=0.85) buckets['≥ 85%']++;
+    else if(c>=0.75) buckets['75–84%']++;
+    else if(c>=0.5)  buckets['50–74%']++;
+    else buckets['< 50%']++;
+  });
+  const hourPass={};
+  ev.filter(e=>e.eventType==='RE_VERIFY'&&e.timestamp).forEach(e=>{
+    const h=parseInt(e.timestamp.slice(11,13));
+    if(!hourPass[h]) hourPass[h]={p:0,t:0};
+    hourPass[h].t++;
+    if(e.outcome==='FACE_SUCCESS') hourPass[h].p++;
+  });
+  const hourBars = Object.entries(hourPass).sort((a,b)=>+a[0]-+b[0]).map(([h,s])=>{
+    const r=pct(s.p,s.t);
+    return barHTML(h+':00',r,100,r>=75?'#0F6E56':'#A32D2D',true);
+  }).join('');
+  document.getElementById('a-equity').innerHTML =
+    '<div class="bs-title" style="margin-bottom:6px">Confidence distribution</div>'
+    +Object.entries(buckets).map(([k,v])=>barHTML(k,v,face.length,bColors[k])).join('')
+    +'<div class="divider"></div>'
+    +'<div class="bs-title" style="margin-bottom:6px">Pass rate by hour (lighting proxy)</div>'
+    +(hourBars||'<div class="empty">—</div>');
+
+  // ── Section C: Attendance ──
+  const allAgents = Object.keys(as);
+  const enrolledAgents  = allAgents.filter(id=>RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='ENROLLMENT'));
+  const verifiedAgents  = allAgents.filter(id=>RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS'));
+  const neverVerified   = allAgents.filter(id=>!RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='RE_VERIFY'));
+  document.getElementById('a-attendance').innerHTML =
+    barHTML('Enrolled',enrolledAgents.length,allAgents.length,'#0F6E56')
+    +barHTML('Face verified',verifiedAgents.length,allAgents.length,'#185FA5')
+    +barHTML('Never re-verified',neverVerified.length,allAgents.length,'#A32D2D')
+    +'<div class="divider"></div>'
+    +'<div style="font-size:11px;color:var(--text2)">'+allAgents.length+' unique agents in filtered data</div>';
+
+  // ── Section D: Risk flags ──
+  const risks = [];
+  // Agents with PIN dependency (>50% events are PIN)
+  Object.entries(as).forEach(([id,s])=>{
+    const agEv = ev.filter(e=>e.individualId===id);
+    const pinCount = agEv.filter(e=>e.outcome==='PIN_FALLBACK').length;
+    if(pinCount>0 && pct(pinCount,agEv.length)>50) {
+      risks.push({color:'#5B3A8C',text:'PIN-dependent: '+shortId(id)+' ('+pct(pinCount,agEv.length)+'% PIN fallback)'});
+    }
+  });
+  // Agents with >3 consecutive misses
+  Object.keys(as).forEach(id=>{
+    const agEv = ev.filter(e=>e.individualId===id&&e.eventType==='RE_VERIFY').sort((a,b)=>(a.timestamp||'').localeCompare(b.timestamp||''));
+    let streak=0, maxStreak=0;
+    agEv.forEach(e=>{ if(e.outcome==='MISSED'){streak++;maxStreak=Math.max(maxStreak,streak);}else{streak=0;} });
+    if(maxStreak>=3) risks.push({color:'#A32D2D',text:'Consecutive misses: '+shortId(id)+' ('+maxStreak+' in a row)'});
+  });
+  // Agents below confidence threshold
+  Object.entries(as).forEach(([id,s])=>{
+    const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
+    if(avg>0&&avg<0.70) risks.push({color:'#854F0B',text:'Low confidence: '+shortId(id)+' (avg '+(avg*100).toFixed(0)+'%)'});
+  });
+  document.getElementById('a-risks').innerHTML = risks.length
+    ? risks.map(r=>'<div class="risk-flag"><div class="risk-dot" style="background:'+r.color+'"></div><span>'+r.text+'</span></div>').join('')
+    : '<div class="empty" style="padding:12px">No risk flags in current data</div>';
+
+  // ── Boundary breakdown ──
   const byBoundary={};
   filteredEvents.filter(e=>e.boundaryCode).forEach(e=>{
     if(!byBoundary[e.boundaryCode]) byBoundary[e.boundaryCode]=[];
@@ -963,14 +1489,8 @@ function renderAnalytics(){
   if(Object.keys(byBoundary).length){
     document.getElementById('a-boundary').innerHTML=
       Object.entries(byBoundary).map(([code,evs])=>{
-        const a=aggregate(evs);
-        return `<div style="margin-bottom:6px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-            <span style="font-weight:500">${code}</span>
-            <span style="color:var(--text3)">${evs.length} events</span>
-          </div>
-          ${barHTML('Pass rate',a.rvPassRate,100,a.rvPassRate>=75?'#22c55e':'#ef4444',true)}
-        </div>`;
+        const ag=aggregate(evs);
+        return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:500">'+code+'</span><span style="color:var(--text3)">'+evs.length+' events</span></div>'+barHTML('Pass rate',ag.rvPassRate,100,ag.rvPassRate>=75?'#0F6E56':'#A32D2D',true)+'</div>';
       }).join('');
   }
 }
@@ -990,8 +1510,10 @@ function fillAvatars() {
 }
 
 function renderAgentTable(filter){
-  const as=agentStats(filteredEvents);
-  let rows=Object.entries(as);
+  // Use RAW_EVENTS for agent table (always shows all agents regardless of agent filter)
+  const sourceEvents = activeAgentFilter ? RAW_EVENTS : filteredEvents;
+  const as = agentStats(sourceEvents);
+  let rows = Object.entries(as);
   if(filter==='fail')  rows=rows.filter(([,s])=>s.miss>0||s.fail>0);
   if(filter==='below') rows=rows.filter(([,s])=>{
     const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
@@ -1002,24 +1524,69 @@ function renderAgentTable(filter){
   tbody.innerHTML=rows.map(([id,s])=>{
     const avgC=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
     const cls=s.miss>0||s.fail>0?'pill-miss':s.pass===s.total?'pill-pass':'pill-warn';
-    // Get most recent face image for this agent
-    const agentEvents = filteredEvents.filter(e=>e.individualId===id && e.faceImage);
-    const latestFace = agentEvents.length ? agentEvents[agentEvents.length-1].faceImage : null;
-    const faceAvatar = latestFace
-      ? `<img src="data:image/jpeg;base64,${latestFace}" class="face-thumb-sm" alt="face">`
-      : `<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:28px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>`;
-    return `<tr style="cursor:pointer" onclick="showEventDetail({individualId:'${id}',eventType:'',responseType:'',outcome:'',confidence:${avgC},failedAttemptCount:0,timestamp:'${s.last||''}',lat:0,lng:0,locationAccuracy:0,boundaryCode:null,anomalyFlags:null,deviceId:null,faceImage:${latestFace?`'${latestFace}'`:'null'},popupTime:null,responseTime:null,tenantId:'ba'});switchTabDirect('map')">
-      <td>${faceAvatar}${shortId(id)}</td>
-      <td>${s.total}</td>
-      <td><span class="pill ${cls}">${s.pass}/${s.total}</span></td>
-      <td>${s.miss}</td>
-      <td>
-        <span class="conf-bar"><span class="conf-fill" style="width:${avgC*100}%;background:${confColor(avgC)}"></span></span>
-        ${avgC?(avgC*100).toFixed(0)+'%':'—'}
-      </td>
-      <td>${timeStr(s.last)}</td>
-    </tr>`;
+    const isActive = activeAgentFilter===id;
+    const avatarSlot = AGENT_FACE[id]
+      ? '<span id="av-'+id+'" style="display:inline-block;width:28px;height:28px;border-radius:50%;overflow:hidden;vertical-align:middle;margin-right:4px;border:1.5px solid var(--border2)"></span>'
+      : '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:26px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>';
+    return '<tr style="cursor:pointer;'+(isActive?'background:var(--blue-l);':'')+'" onclick="drillAgent(''+id+'')">'
+      +'<td>'+avatarSlot+shortId(id)+'</td>'
+      +'<td>'+s.total+'</td>'
+      +'<td><span class="pill '+cls+'">'+s.pass+'/'+s.total+'</span></td>'
+      +'<td>'+s.miss+'</td>'
+      +'<td><span class="conf-bar"><span class="conf-fill" style="width:'+(avgC*100)+'%;background:'+confColor(avgC)+'"></span></span> '+(avgC?(avgC*100).toFixed(0)+'%':'—')+'</td>'
+      +'<td>'+timeStr(s.last)+'</td>'
+      +'</tr>';
   }).join('');
+}
+
+function drillAgent(id) {
+  // Filter map + feed to this agent
+  filterByAgent(id);
+  // Switch to map to see their events
+  switchTabDirect('map');
+  // Show agent timeline in right panel
+  showAgentTimeline(id);
+}
+
+function showAgentTimeline(id) {
+  const agentEvents = RAW_EVENTS.filter(e=>e.individualId===id)
+    .sort((a,b)=>(a.timestamp||'').localeCompare(b.timestamp||''));
+  const as = agentStats(agentEvents)[id] || {total:0,pass:0,miss:0,fail:0,confs:[]};
+  const avgC = as.confs.length ? as.confs.reduce((a,b)=>a+b,0)/as.confs.length : 0;
+  const enrolled = agentEvents.some(e=>e.eventType==='ENROLLMENT');
+
+  selectedItem = {individualId:id};
+  document.getElementById('rp-title').textContent = shortId(id);
+  document.getElementById('rp-back').style.display='';
+
+  const timeline = agentEvents.map(e=>{
+    const icon = e.eventType==='ENROLLMENT'?'📋':e.eventType==='LOGIN'?'🔑':e.eventType==='RE_VERIFY'?'🔄':'✓';
+    const col = outcomeColor(e.outcome);
+    const conf = e.confidence ? ' · '+(e.confidence*100).toFixed(0)+'%' : '';
+    const dur = e.responseTime ? ' · '+parseResponseSecs(e.responseTime)+'s' : '';
+    return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:.5px solid var(--border);font-size:11px">'
+      +'<span style="flex-shrink:0;width:14px;margin-top:1px">'+icon+'</span>'
+      +'<div style="flex:1"><div style="color:var(--text2)">'+e.eventType+'</div>'
+      +'<div style="color:'+col+';font-weight:500">'+e.outcome+conf+dur+'</div></div>'
+      +'<span style="color:var(--text3);white-space:nowrap">'+timeStr(e.timestamp)+'</span>'
+      +'</div>';
+  }).join('');
+
+  document.getElementById('rp-body').innerHTML =
+    '<div id="rp-face-slot" data-cls="face-thumb-lg" style="margin-bottom:8px"></div>'
+    +'<div class="stat-grid">'
+    +'<div class="stat-card"><div class="sl">Total events</div><div class="sv">'+agentEvents.length+'</div></div>'
+    +'<div class="stat-card"><div class="sl">Enrolled</div><div class="sv" style="color:'+(enrolled?'var(--teal)':'var(--red)')+'">'+( enrolled?'Yes':'No')+'</div></div>'
+    +'<div class="stat-card"><div class="sl">Pass rate</div><div class="sv" style="color:'+(pct(as.pass,as.total)>=75?'var(--teal)':'var(--red)')+'">'+pct(as.pass,as.total)+'%</div></div>'
+    +'<div class="stat-card"><div class="sl">Avg confidence</div><div class="sv" style="color:'+confColor(avgC)+'">'+( avgC?(avgC*100).toFixed(0)+'%':'—')+'</div></div>'
+    +'<div class="stat-card"><div class="sl">Misses</div><div class="sv" style="color:'+( as.miss>0?'var(--red)':'var(--text)')+'">'+as.miss+'</div></div>'
+    +'<div class="stat-card"><div class="sl">PIN fallbacks</div><div class="sv">'+agentEvents.filter(e=>e.outcome==='PIN_FALLBACK').length+'</div></div>'
+    +'</div>'
+    +'<div class="divider"></div>'
+    +'<div class="bs-title" style="margin-bottom:6px">Full event timeline</div>'
+    +(timeline||'<div class="empty">No events</div>');
+
+  setTimeout(()=>setFaceImg('rp-face-slot', AGENT_FACE[id]||null), 0);
 }
 
 /* ═══════════════════════════════════════════════
