@@ -135,6 +135,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .updated-pill{font-size:10px;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:20px;color:rgba(255,255,255,.7);white-space:nowrap}
 
 .face-marker{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer}
+input[type=date]::-webkit-inner-spin-button{display:none}
 .face-thumb{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);flex-shrink:0;background:var(--bg3)}
 .face-thumb-lg{width:88px;height:88px;border-radius:8px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}
 .face-thumb-sm{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px}
@@ -165,6 +167,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
     <p id="topbar-meta">Loading…</p>
   </div>
   <div class="topbar-right">
+    <select id="limit-select" onchange="loadData()" title="Events to fetch from API">
+      <option value="100">100 events</option>
+      <option value="500">500 events</option>
+      <option value="1000">1000 events</option>
+      <option value="5000">5000 events</option>
+      <option value="0">All events</option>
+    </select>
+    <input type="date" id="date-from" onchange="applyFilters()" title="From date"
+      style="font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:130px">
+    <span style="color:rgba(255,255,255,.5);font-size:11px">→</span>
+    <input type="date" id="date-to" onchange="applyFilters()" title="To date"
+      style="font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:130px">
+    <button onclick="clearDates()" title="Clear date filter"
+      style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.7);cursor:pointer">✕</button>
     <select id="filter-event" onchange="applyFilters()">
       <option value="ALL">All events</option>
       <option value="LOGIN">Login</option>
@@ -332,6 +348,25 @@ let selectedItem = null;
 let map, dotLayer, choroLayer;
 let isLoading = false;
 
+const AGENT_FACE = {};
+function cacheImages(events) {
+  events.forEach(e => { if (e.faceImage) AGENT_FACE[e.individualId] = e.faceImage; });
+}
+function setFaceImg(elementId, b64) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.innerHTML = '';
+  if (b64) {
+    const img = document.createElement('img');
+    img.src = 'data:image/jpeg;base64,' + b64;
+    img.className = el.dataset.cls || 'face-thumb-lg';
+    img.alt = 'Face scan';
+    el.appendChild(img);
+  } else {
+    el.textContent = '';
+  }
+}
+
 /* ═══════════════════════════════════════════════
    MOCK GeoJSON — replace with real file / API
    Bauchi pilot: 3 LGAs, 1 ward each
@@ -365,13 +400,22 @@ async function loadData() {
   setLoadingMsg('Connecting to DIGIT API…', 'Fetching face events from Bauchi HCM');
 
   try {
-    const res = await fetch('/api/events');
+    const limitVal = document.getElementById('limit-select').value;
+    const res = await fetch('/api/events?limit=' + limitVal);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
     if (!data.success) throw new Error(data.error || 'API returned failure');
 
     RAW_EVENTS = data.events || [];
+    // Deduplicate raw events by id
+    const seen = new Set();
+    RAW_EVENTS = RAW_EVENTS.filter(e => {
+      if (!e.id) return true;
+      if (seen.has(e.id)) return false;
+      seen.add(e.id); return true;
+    });
+    cacheImages(RAW_EVENTS);
 
     const fetched = new Date(data.fetchedAt);
     document.getElementById('updated-pill').textContent =
@@ -380,6 +424,16 @@ async function loadData() {
     setLoadingMsg('Building dashboard…', `${RAW_EVENTS.length} events loaded`);
 
     filteredEvents = [...RAW_EVENTS];
+    // Auto-set date range to span of loaded data
+    const dates = RAW_EVENTS.map(e=>e.timestamp).filter(Boolean).sort();
+    if(dates.length){
+      const earliest = dates[0].slice(0,10);
+      const latest   = dates[dates.length-1].slice(0,10);
+      const fromEl = document.getElementById('date-from');
+      const toEl   = document.getElementById('date-to');
+      if(!fromEl.value) fromEl.value = earliest;
+      if(!toEl.value)   toEl.value   = latest;
+    }
     applyFilters();
     hideLoading();
 
@@ -497,14 +551,28 @@ function agentStats(events){
    FILTERS
    ═══════════════════════════════════════════════ */
 function applyFilters(){
-  const et = document.getElementById('filter-event').value;
-  const oc = document.getElementById('filter-outcome').value;
+  const et   = document.getElementById('filter-event').value;
+  const oc   = document.getElementById('filter-outcome').value;
+  const from = document.getElementById('date-from').value;   // 'YYYY-MM-DD' or ''
+  const to   = document.getElementById('date-to').value;
+
   filteredEvents = RAW_EVENTS.filter(e=>{
     if(et!=='ALL' && e.eventType!==et) return false;
     if(oc!=='ALL' && e.outcome!==oc)   return false;
+    if(e.timestamp){
+      const evDate = e.timestamp.slice(0,10); // 'YYYY-MM-DD'
+      if(from && evDate < from) return false;
+      if(to   && evDate > to)   return false;
+    }
     return true;
   });
   updateAll();
+}
+
+function clearDates(){
+  document.getElementById('date-from').value = '';
+  document.getElementById('date-to').value   = '';
+  applyFilters();
 }
 
 /* ═══════════════════════════════════════════════
@@ -515,13 +583,20 @@ function updateAll(){
   updateMap();
   renderRightPanel();
   renderFeed();
+  setTimeout(fillFeedAvatars, 50);
   renderAnalytics();
   renderAgentTable('all');
+  setTimeout(fillAvatars, 50);
 
   const dates = filteredEvents.map(e=>e.timestamp).filter(Boolean).sort();
   const agg = aggregate(filteredEvents);
   document.getElementById('topbar-meta').textContent =
-    `Bauchi State · ${filteredEvents.length} events · ${agg.agents} agents · ${dates[0]||'—'} → ${dates[dates.length-1]||'—'}`;
+    (()=>{
+      const from = document.getElementById('date-from').value;
+      const to   = document.getElementById('date-to').value;
+      const dateRange = (from||to) ? ` · ${from||'…'} → ${to||'…'}` : '';
+      return `Bauchi State · ${filteredEvents.length} events · ${agg.agents} agents${dateRange}`;
+    })();
 }
 
 /* ═══════════════════════════════════════════════
@@ -626,9 +701,10 @@ function faceImgTag(faceImage, cls='face-thumb') {
 }
 
 function popupHTML(e){
-  const img = e.faceImage ? `<img src="data:image/jpeg;base64,${e.faceImage}" style="width:64px;height:64px;border-radius:6px;object-fit:cover;display:block;margin-bottom:6px;border:1px solid #ddd">` : '';
+  const face = AGENT_FACE[e.individualId];
+  const imgHtml = face ? '<img src="data:image/jpeg;base64,' + face + '" style="width:64px;height:64px;border-radius:6px;object-fit:cover;display:block;margin-bottom:6px;border:1px solid #ddd">' : '';
   return `<div style="font-size:12px;line-height:1.7;min-width:155px">
-    ${img}
+    ${imgHtml}
     <div style="font-weight:600;margin-bottom:3px">${shortId(e.individualId)}</div>
     <div><b>Type:</b> ${e.eventType}</div>
     <div><b>Outcome:</b> <span style="color:${outcomeColor(e.outcome)}">${e.outcome}</span></div>
@@ -741,11 +817,8 @@ function showEventDetail(e){
   selectedItem = e;
   document.getElementById('rp-title').textContent = shortId(e.individualId);
   document.getElementById('rp-back').style.display='';
-  const faceBlock = e.faceImage
-    ? `<img src="data:image/jpeg;base64,${e.faceImage}" class="face-thumb-lg" alt="Face scan at ${e.eventType}">`
-    : `<div style="width:88px;height:88px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:8px">👤</div>`;
   document.getElementById('rp-body').innerHTML=`
-    ${faceBlock}
+    <div id="rp-face-slot" data-cls="face-thumb-lg" style="margin-bottom:8px"></div>
     <div class="stat-grid">
       <div class="stat-card" style="grid-column:1/-1"><div class="sl">Individual ID</div>
         <div style="font-size:10px;word-break:break-all;margin-top:2px;font-weight:500">${e.individualId||'—'}</div></div>
@@ -773,7 +846,8 @@ function showEventDetail(e){
       <div><b>Anomaly flags:</b> ${e.anomalyFlags||'None'}</div>
       <div><b>Device ID:</b> ${e.deviceId||'—'}</div>
     </div>`;
-}
+
+  setTimeout(()=>setFaceImg('rp-face-slot', AGENT_FACE[e.individualId]||null), 0);}
 
 function clearSelection(){
   selectedItem=null;
@@ -787,19 +861,29 @@ function clearSelection(){
    EVENT FEED
    ═══════════════════════════════════════════════ */
 function renderFeed(){
-  const sorted=[...filteredEvents].sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
-  const body=document.getElementById('feed-body');
-  if(!sorted.length){body.innerHTML='<div class="empty">No events match current filters.</div>';return;}
-  body.innerHTML=sorted.map(e=>{
-    const bc=e.outcome==='FACE_SUCCESS'?'badge-success':e.outcome==='MISSED'?'badge-missed':'badge-warn';
-    const conf=e.confidence?`<span class="conf-bar"><span class="conf-fill" style="width:${e.confidence*100}%;background:${confColor(e.confidence)}"></span></span> ${(e.confidence*100).toFixed(0)}%`:'—';
-    const safeE=encodeURIComponent(JSON.stringify(e));
-    const faceThumb = e.faceImage
-      ? `<img src="data:image/jpeg;base64,${e.faceImage}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px;flex-shrink:0">`
+  // Deduplicate by event id before rendering
+  const seen = new Set();
+  const unique = [...filteredEvents]
+    .filter(e => { if(!e.id || seen.has(e.id)){ return !e.id; } seen.add(e.id); return true; })
+    .sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+
+  const body = document.getElementById('feed-body');
+  if(!unique.length){ body.innerHTML='<div class="empty">No events match current filters.</div>'; return; }
+
+  body.innerHTML = unique.map(e=>{
+    const bc  = e.outcome==='FACE_SUCCESS'?'badge-success':e.outcome==='MISSED'?'badge-missed':'badge-warn';
+    const conf = e.confidence
+      ? `<span class="conf-bar"><span class="conf-fill" style="width:${e.confidence*100}%;background:${confColor(e.confidence)}"></span></span> ${(e.confidence*100).toFixed(0)}%`
+      : '—';
+    // Safe click — store id, look up full event on click
+    const safeId = (e.id||'').replace(/'/g,"\'");
+    // Face avatar via DOM slot (avoids base64 in template literal)
+    const faceSlot = AGENT_FACE[e.individualId]
+      ? `<span id="fi-${e.id}" style="display:inline-block;width:22px;height:22px;border-radius:50%;overflow:hidden;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px;flex-shrink:0"></span>`
       : '';
-    return `<div class="feed-item" onclick="openFeedEvent('${safeE}')">
+    return `<div class="feed-item" onclick="openFeedById('${safeId}')">
       <div class="fi-top" style="display:flex;align-items:center;gap:5px">
-        ${faceThumb}
+        ${faceSlot}
         <span class="fi-badge ${bc}">${e.outcome}</span>
         <span style="font-size:10px;color:var(--text2)">${e.eventType}</span>
         <span class="fi-time">${timeStr(e.timestamp)}</span>
@@ -808,6 +892,24 @@ function renderFeed(){
     </div>`;
   }).join('');
 }
+function openFeedById(id) {
+  const e = filteredEvents.find(ev => ev.id === id);
+  if (e) { showEventDetail(e); switchTabDirect('map'); }
+}
+
+function fillFeedAvatars() {
+  filteredEvents.forEach(e => {
+    const b64 = AGENT_FACE[e.individualId];
+    if (!b64) return;
+    const slot = document.getElementById('fi-' + e.id);
+    if (!slot || slot.children.length) return;
+    const img = document.createElement('img');
+    img.src = 'data:image/jpeg;base64,' + b64;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    slot.appendChild(img);
+  });
+}
+
 function openFeedEvent(encoded){
   const e=JSON.parse(decodeURIComponent(encoded));
   showEventDetail(e);
@@ -876,6 +978,17 @@ function renderAnalytics(){
 /* ═══════════════════════════════════════════════
    AGENT TABLE
    ═══════════════════════════════════════════════ */
+function fillAvatars() {
+  Object.entries(AGENT_FACE).forEach(([id, b64]) => {
+    const slot = document.getElementById('av-' + id);
+    if (!slot || slot.children.length) return;
+    const img = document.createElement('img');
+    img.src = 'data:image/jpeg;base64,' + b64;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    slot.appendChild(img);
+  });
+}
+
 function renderAgentTable(filter){
   const as=agentStats(filteredEvents);
   let rows=Object.entries(as);
