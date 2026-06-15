@@ -4,7 +4,7 @@
 const API_BASE  = 'https://bauchi-hcm-uat.digit.org/attendance/face-auth/v1/_search';
 const AUTH_TOKEN = '6edda9c7-e97c-4cb1-b73c-93d1dd56c837';
 const TENANT_ID  = 'ba';
-const PAGE_SIZE  = 100;
+const PAGE_SIZE  = 15;
 
 const REQUEST_INFO = {
   apiId: 'hcm', ver: '.01', action: '_search', did: '1', key: '1',
