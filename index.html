@@ -1523,12 +1523,14 @@ function renderAgentTable(filter){
     const avatarSlot = AGENT_FACE[id]
       ? '<span id="av-'+id+'" style="display:inline-block;width:28px;height:28px;border-radius:50%;overflow:hidden;vertical-align:middle;margin-right:4px;border:1.5px solid var(--border2)"></span>'
       : '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:26px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>';
-    return '<tr style="cursor:pointer;'+(isActive?'background:var(--blue-l);':'')+'" onclick="drillAgent(''+id+'')">'
+    const rowBg = isActive ? 'background:var(--blue-l);' : '';
+    const avgPct = avgC ? (avgC*100).toFixed(0)+'%' : '—';
+    return '<tr style="cursor:pointer;'+rowBg+'" onclick="drillAgent(\"'+id+'\")">' 
       +'<td>'+avatarSlot+shortId(id)+'</td>'
       +'<td>'+s.total+'</td>'
       +'<td><span class="pill '+cls+'">'+s.pass+'/'+s.total+'</span></td>'
       +'<td>'+s.miss+'</td>'
-      +'<td><span class="conf-bar"><span class="conf-fill" style="width:'+(avgC*100)+'%;background:'+confColor(avgC)+'"></span></span> '+(avgC?(avgC*100).toFixed(0)+'%':'—')+'</td>'
+      +'<td><span class="conf-bar"><span class="conf-fill" style="width:'+(avgC*100)+'%;background:'+confColor(avgC)+'"></span></span> '+avgPct+'</td>'
       +'<td>'+timeStr(s.last)+'</td>'
       +'</tr>';
   }).join('');
