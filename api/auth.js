@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
     });
 
     try {
-      const tokenRes = await fetch(`${BASE_URL}/user/oauth/token`, {
+      const tokenRes = await fetch(`${BASE_URL}/user/oauth/token?tenantId=${TENANT_ID}`, {
         method: 'POST',
         headers: {
           'Content-Type':  'application/x-www-form-urlencoded',
