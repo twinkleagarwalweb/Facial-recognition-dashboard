@@ -1,7 +1,7 @@
 // api/events.js — Vercel serverless proxy for DIGIT face auth API
 // Uses module.exports for maximum Node.js compatibility
 
-const API_BASE  = 'https://bauchi-hcm-uat.digit.org/attendance/face-auth/v1/_search';
+const API_BASE  = 'https://bauchi-hcm.digit.org/attendance/face-auth/v1/_search';
 const AUTH_TOKEN = '6edda9c7-e97c-4cb1-b73c-93d1dd56c837';
 const TENANT_ID  = 'ba';
 const PAGE_SIZE  = 15;
