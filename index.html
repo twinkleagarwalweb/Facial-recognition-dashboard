@@ -6,534 +6,259 @@
 <title>Bauchi FaceID Pilot — War Room</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#1C3A52;--blue:#185FA5;--blue-l:#E6F1FB;
-  --teal:#0F6E56;--teal-l:#E1F5EE;
-  --amber:#854F0B;--amber-l:#FFF3CD;
-  --red:#A32D2D;--red-l:#FDECEA;
-  --green:#276B3A;--green-l:#E6F4EA;
-  --gray:#5F5E5A;--gray-l:#F4F3EF;
-  --text:#1a1a1a;--text2:#555;--text3:#999;
-  --bg:#fff;--bg2:#f8f8f6;--bg3:#f0efea;
-  --border:rgba(0,0,0,0.11);--border2:rgba(0,0,0,0.18);
-}
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--text);background:var(--bg)}
-.app{display:flex;flex-direction:column;height:100%}
-
-/* Loading overlay */
-#loading-overlay{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
-#loading-overlay.fade{opacity:0;pointer-events:none}
-.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:#5DCAA5;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loading-msg{color:rgba(255,255,255,.8);font-size:13px;margin-top:6px}
-#loading-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:4px}
-
-/* Error banner */
-#error-banner{display:none;background:var(--red-l);border-bottom:1px solid var(--red);padding:8px 14px;font-size:12px;color:var(--red);flex-shrink:0;align-items:center;gap:10px}
-#error-banner.show{display:flex}
-#error-banner button{margin-left:auto;font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline}
-
-/* Topbar */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--navy);color:#fff;flex-shrink:0;gap:12px}
-.topbar-left h1{font-size:14px;font-weight:600}
-.topbar-left p{font-size:11px;opacity:.65;margin-top:2px}
-.live-dot{width:7px;height:7px;border-radius:50%;background:#5DCAA5;display:inline-block;margin-right:5px;animation:pulse 1.5s ease-in-out infinite}
-.live-dot.red{background:#A32D2D;animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.topbar-right select{font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer}
-.topbar-right select option{color:var(--text);background:var(--bg)}
-.refresh-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer;white-space:nowrap}
-.refresh-btn:hover{background:rgba(255,255,255,.1)}
-.refresh-btn.spinning{opacity:.6;pointer-events:none}
-
-/* Tabs */
-.tabs{display:flex;background:var(--bg2);border-bottom:.5px solid var(--border);flex-shrink:0;overflow-x:auto}
-.tab{padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all .15s}
-.tab.active{color:var(--navy);border-bottom-color:var(--blue)}
-.tab:hover:not(.active){color:var(--text)}
-
-/* L1 metric strip */
-.metric-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:.5px solid var(--border);flex-shrink:0}
-.mc{padding:9px 12px;border-right:.5px solid var(--border);cursor:pointer;transition:background .12s}
-.mc:last-child{border-right:none}
-.mc:hover,.mc.active{background:var(--blue-l)}
-.mc-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
-.mc-val{font-size:20px;font-weight:500;line-height:1.2}
-.mc-sub{font-size:10px;color:var(--text3);margin-top:2px}
-.mc-bar{height:2px;border-radius:1px;margin-top:5px;background:var(--border);overflow:hidden}
-.mc-fill{height:100%;border-radius:1px;transition:width .4s}
-
-/* Main layout */
-.main{display:flex;flex:1;overflow:hidden;min-height:0}
-.map-wrap{flex:1;position:relative;min-width:0}
-#map{width:100%;height:100%}
-
-/* Right panel */
-.rpanel{width:280px;flex-shrink:0;border-left:.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
-.rp-header{padding:9px 12px;font-size:11px;font-weight:600;color:var(--text2);border-bottom:.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2);flex-shrink:0}
-.back-btn{font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;padding:0;font-weight:500}
-.rp-body{flex:1;overflow-y:auto;padding:10px 12px}
-
-/* Map overlays */
-.map-layer-toggle{position:absolute;top:10px;right:10px;z-index:500;display:flex;gap:4px;flex-direction:column}
-.mlt-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:.5px solid var(--border2);cursor:pointer;background:var(--bg);color:var(--text2);font-weight:500;white-space:nowrap;text-align:left;transition:all .12s}
-.mlt-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.map-legend{position:absolute;bottom:24px;left:10px;z-index:500;background:var(--bg);border:.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:11px;min-width:140px}
-.legend-title{font-weight:600;color:var(--text2);margin-bottom:5px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
-.legend-row{display:flex;align-items:center;gap:7px;color:var(--text2);margin-bottom:3px}
-.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-
-/* Right panel components */
-.bar-section{margin-bottom:12px}
-.bs-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
-.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px}
-.bar-label{width:88px;color:var(--text2);text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar-track{flex:1;height:7px;background:var(--border);border-radius:3px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;transition:width .35s}
-.bar-val{width:36px;color:var(--text2);text-align:right;flex-shrink:0;font-size:10px}
-.divider{border:none;border-top:.5px solid var(--border);margin:10px 0}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
-.stat-card{background:var(--bg2);border:.5px solid var(--border);border-radius:6px;padding:7px 9px}
-.stat-card .sl{font-size:10px;color:var(--text3);margin-bottom:2px}
-.stat-card .sv{font-size:16px;font-weight:500}
-
-/* Feed */
-.feed-item{padding:7px 0;border-bottom:.5px solid var(--border);cursor:pointer}
-.feed-item:last-child{border-bottom:none}
-.feed-item:hover{background:var(--bg2);margin:0 -12px;padding-left:12px;padding-right:12px}
-.fi-top{display:flex;align-items:center;gap:5px;margin-bottom:2px}
-.fi-badge{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500}
-.fi-time{margin-left:auto;font-size:10px;color:var(--text3);white-space:nowrap}
-.fi-detail{font-size:11px;color:var(--text2)}
-.badge-success{background:var(--green-l);color:var(--green)}
-.badge-missed{background:var(--red-l);color:var(--red)}
-.badge-warn{background:var(--amber-l);color:var(--amber)}
-.badge-info{background:var(--blue-l);color:var(--blue)}
-
-/* Agent table */
-.agt-table{width:100%;border-collapse:collapse;font-size:11px}
-.agt-table th{text-align:left;padding:5px 6px;border-bottom:.5px solid var(--border);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
-.agt-table td{padding:5px 6px;border-bottom:.5px solid var(--border);color:var(--text)}
-.agt-table tr:hover td{background:var(--bg2)}
-.pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500}
-.pill-pass{background:var(--green-l);color:var(--green)}
-.pill-miss{background:var(--red-l);color:var(--red)}
-.pill-warn{background:var(--amber-l);color:var(--amber)}
-.conf-bar{display:inline-block;width:40px;height:5px;background:var(--border);border-radius:2px;vertical-align:middle;margin-left:4px;overflow:hidden}
-.conf-fill{height:100%;border-radius:2px}
-.empty{text-align:center;color:var(--text3);padding:30px 12px;font-size:12px}
-
-/* Screens */
-.screen{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
-.screen.active{display:flex}
-.scroll-body{flex:1;overflow-y:auto;padding:12px}
-
-/* Last updated pill */
-.updated-pill{font-size:10px;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:20px;color:rgba(255,255,255,.7);white-space:nowrap}
-
-.feed-toggle{font-size:11px;padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
-.feed-toggle:hover{background:var(--bg3)}
-.active-toggle{background:var(--navy);color:#fff;border-color:var(--navy)}
-.face-marker{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer}
-input[type=date]::-webkit-inner-spin-button{display:none}
-.face-thumb{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);flex-shrink:0;background:var(--bg3)}
-.face-thumb-lg{width:88px;height:88px;border-radius:8px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}
-.face-thumb-sm{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px}
-.no-face{width:56px;height:56px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--text3)}
-
-/* ── Unified colour palette ── */
-:root{
-  --c-success:#0F6E56; --c-success-l:#E1F5EE;
-  --c-miss:#A32D2D;    --c-miss-l:#FDECEA;
-  --c-pin:#5B3A8C;     --c-pin-l:#F0EBFF;
-  --c-reject:#C2400C;  --c-reject-l:#FEE8DF;
-  --c-lowconf:#854F0B; --c-lowconf-l:#FFF3CD;
-  --c-info:#185FA5;    --c-info-l:#E6F1FB;
-}
-
-/* ── L2 inline panel ── */
-.l2-panel{display:none;border-bottom:.5px solid var(--border);background:var(--bg2);animation:slideDown .2s ease}
-.l2-panel.open{display:block}
-@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.l2-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 14px}
-.l2-inner.cols2{grid-template-columns:repeat(2,1fr)}
-.l2-card{background:var(--bg);border:.5px solid var(--border);border-radius:8px;padding:10px 12px}
-.l2-card-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
-.l2-big{font-size:22px;font-weight:600;margin-bottom:2px}
-.l2-sub{font-size:10px;color:var(--text3)}
-.l2-close{float:right;font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;font-weight:500;margin-top:-2px}
-.mc.active-l2{background:var(--navy)!important;color:#fff}
-.mc.active-l2 .mc-label,.mc.active-l2 .mc-sub{color:rgba(255,255,255,.6)}
-.mc.active-l2 .mc-val{color:#fff}
-
-/* ── Agent filter banner ── */
-.agent-filter-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:#E6F1FB;border-bottom:.5px solid var(--border);font-size:12px;color:var(--navy);flex-shrink:0}
-.agent-filter-bar.show{display:flex}
-.agent-filter-bar button{font-size:11px;padding:2px 8px;border-radius:20px;border:.5px solid var(--navy);background:transparent;color:var(--navy);cursor:pointer;margin-left:auto}
-
-/* ── Improved map markers ── */
-.mk{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);cursor:pointer;transition:transform .1s}
-.mk:hover{transform:scale(1.3)}
-.mk-success{background:var(--c-success)}
-.mk-miss{background:var(--c-miss)}
-.mk-pin{background:var(--c-pin)}
-.mk-reject{background:var(--c-reject)}
-.mk-info{background:var(--c-info)}
-.leaflet-popup-content-wrapper{border-radius:8px!important;box-shadow:0 4px 16px rgba(0,0,0,.15)!important}
-.leaflet-popup-content{margin:10px 12px!important}
-
-/* ── Analytics score card ── */
-.score-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border:4px solid;margin:0 auto 8px}
-.dim-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border);cursor:pointer}
-.dim-row:last-child{border-bottom:none}
-.dim-row:hover{background:var(--bg3);margin:0 -12px;padding-left:12px;padding-right:12px}
-.dim-score{font-size:13px;font-weight:600;width:36px;flex-shrink:0;text-align:right}
-.dim-label{flex:1;font-size:12px}
-.dim-bar{width:80px;height:5px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
-.dim-fill{height:100%;border-radius:2px}
-.dim-flag{font-size:10px;color:var(--c-miss);margin-left:4px}
-.expand-btn{font-size:10px;color:var(--blue);cursor:pointer;flex-shrink:0}
-.dim-detail{display:none;padding:8px 0 4px;font-size:11px;color:var(--text2)}
-.dim-detail.open{display:block}
-.risk-flag{display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border);font-size:11px}
-.risk-flag:last-child{border-bottom:none}
-.risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
-
-/* ── Login screen ── */
-#login-screen{
-  position:fixed;inset:0;background:var(--navy);
-  display:flex;align-items:center;justify-content:center;
-  z-index:99999;flex-direction:column;gap:0;
-}
-#login-screen.hidden{display:none}
-.login-box{
-  background:#fff;border-radius:12px;padding:32px 36px;
-  width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);
-}
-.login-logo{text-align:center;margin-bottom:24px}
-.login-logo h1{font-size:18px;font-weight:700;color:var(--navy);margin-top:8px}
-.login-logo p{font-size:12px;color:var(--text3);margin-top:3px}
-.login-field{margin-bottom:14px}
-.login-field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
-.login-field input{
-  width:100%;padding:9px 12px;border:1px solid var(--border2);
-  border-radius:7px;font-size:13px;color:var(--text);outline:none;
-  transition:border .15s;
-}
-.login-field input:focus{border-color:var(--blue)}
-.login-btn{
-  width:100%;padding:10px;background:var(--navy);color:#fff;
-  border:none;border-radius:7px;font-size:13px;font-weight:600;
-  cursor:pointer;margin-top:6px;transition:opacity .15s;
-}
-.login-btn:hover{opacity:.88}
-.login-btn:disabled{opacity:.5;cursor:not-allowed}
-.login-error{
-  background:var(--red-l);color:var(--red);border-radius:6px;
-  padding:8px 10px;font-size:12px;margin-top:10px;display:none;
-}
-.login-error.show{display:block}
-.login-spinner{display:none;text-align:center;margin-top:10px;font-size:12px;color:var(--text3)}
-.login-spinner.show{display:block}
-.login-tenant{font-size:11px;color:var(--text3);text-align:center;margin-top:14px}
-</style>
+<style>*{box-sizing:border-box;margin:0;padding:0}:root{--navy:#1C3A52;--blue:#185FA5;--blue-l:#E6F1FB;--teal:#0F6E56;--teal-l:#E1F5EE;--amber:#854F0B;--amber-l:#FFF3CD;--red:#A32D2D;--red-l:#FDECEA;--green:#276B3A;--green-l:#E6F4EA;--gray:#5F5E5A;--gray-l:#F4F3EF;--text:#1a1a1a;--text2:#555;--text3:#999;--bg:#fff;--bg2:#f8f8f6;--bg3:#f0efea;--border:rgba(0,0,0,0.11);--border2:rgba(0,0,0,0.18)}html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--text);background:var(--bg)}.app{display:flex;flex-direction:column;height:100%}#loading-overlay{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}#loading-overlay.fade{opacity:0;pointer-events:none}.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:#5DCAA5;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}@keyframes spin{to{transform:rotate(360deg)}}#loading-msg{color:rgba(255,255,255,.8);font-size:13px;margin-top:6px}#loading-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:4px}#error-banner{display:none;background:var(--red-l);border-bottom:1px solid var(--red);padding:8px 14px;font-size:12px;color:var(--red);flex-shrink:0;align-items:center;gap:10px}#error-banner.show{display:flex}#error-banner button{margin-left:auto;font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;text-decoration:underline}.topbar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--navy);color:#fff;flex-shrink:0;gap:12px}.topbar-left h1{font-size:14px;font-weight:600}.topbar-left p{font-size:11px;opacity:.65;margin-top:2px}.live-dot{width:7px;height:7px;border-radius:50%;background:#5DCAA5;display:inline-block;margin-right:5px;animation:pulse 1.5s ease-in-out infinite}.live-dot.red{background:#A32D2D;animation:none}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.topbar-right select{font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer}.topbar-right select option{color:var(--text);background:var(--bg)}.refresh-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer;white-space:nowrap}.refresh-btn:hover{background:rgba(255,255,255,.1)}.refresh-btn.spinning{opacity:.6;pointer-events:none}.tabs{display:flex;background:var(--bg2);border-bottom:.5px solid var(--border);flex-shrink:0;overflow-x:auto}.tab{padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all .15s}.tab.active{color:var(--navy);border-bottom-color:var(--blue)}.tab:hover:not(.active){color:var(--text)}.metric-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:.5px solid var(--border);flex-shrink:0}.mc{padding:9px 12px;border-right:.5px solid var(--border);cursor:pointer;transition:background .12s}.mc:last-child{border-right:none}.mc:hover,.mc.active{background:var(--blue-l)}.mc-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}.mc-val{font-size:20px;font-weight:500;line-height:1.2}.mc-sub{font-size:10px;color:var(--text3);margin-top:2px}.mc-bar{height:2px;border-radius:1px;margin-top:5px;background:var(--border);overflow:hidden}.mc-fill{height:100%;border-radius:1px;transition:width .4s}.main{display:flex;flex:1;overflow:hidden;min-height:0}.map-wrap{flex:1;position:relative;min-width:0}#map{width:100%;height:100%}.rpanel{width:280px;flex-shrink:0;border-left:.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}.rp-header{padding:9px 12px;font-size:11px;font-weight:600;color:var(--text2);border-bottom:.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2);flex-shrink:0}.back-btn{font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;padding:0;font-weight:500}.rp-body{flex:1;overflow-y:auto;padding:10px 12px}.map-layer-toggle{position:absolute;top:10px;right:10px;z-index:500;display:flex;gap:4px;flex-direction:column}.mlt-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:.5px solid var(--border2);cursor:pointer;background:var(--bg);color:var(--text2);font-weight:500;white-space:nowrap;text-align:left;transition:all .12s}.mlt-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}.map-legend{position:absolute;bottom:24px;left:10px;z-index:500;background:var(--bg);border:.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:11px;min-width:140px}.legend-title{font-weight:600;color:var(--text2);margin-bottom:5px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}.legend-row{display:flex;align-items:center;gap:7px;color:var(--text2);margin-bottom:3px}.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}.bar-section{margin-bottom:12px}.bs-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px}.bar-label{width:88px;color:var(--text2);text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar-track{flex:1;height:7px;background:var(--border);border-radius:3px;overflow:hidden}.bar-fill{height:100%;border-radius:3px;transition:width .35s}.bar-val{width:36px;color:var(--text2);text-align:right;flex-shrink:0;font-size:10px}.divider{border:none;border-top:.5px solid var(--border);margin:10px 0}.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}.stat-card{background:var(--bg2);border:.5px solid var(--border);border-radius:6px;padding:7px 9px}.stat-card .sl{font-size:10px;color:var(--text3);margin-bottom:2px}.stat-card .sv{font-size:16px;font-weight:500}.feed-item{padding:7px 0;border-bottom:.5px solid var(--border);cursor:pointer}.feed-item:last-child{border-bottom:none}.feed-item:hover{background:var(--bg2);margin:0 -12px;padding-left:12px;padding-right:12px}.fi-top{display:flex;align-items:center;gap:5px;margin-bottom:2px}.fi-badge{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500}.fi-time{margin-left:auto;font-size:10px;color:var(--text3);white-space:nowrap}.fi-detail{font-size:11px;color:var(--text2)}.badge-success{background:var(--green-l);color:var(--green)}.badge-missed{background:var(--red-l);color:var(--red)}.badge-warn{background:var(--amber-l);color:var(--amber)}.badge-info{background:var(--blue-l);color:var(--blue)}.agt-table{width:100%;border-collapse:collapse;font-size:11px}.agt-table th{text-align:left;padding:5px 6px;border-bottom:.5px solid var(--border);color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}.agt-table td{padding:5px 6px;border-bottom:.5px solid var(--border);color:var(--text)}.agt-table tr:hover td{background:var(--bg2)}.pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500}.pill-pass{background:var(--green-l);color:var(--green)}.pill-miss{background:var(--red-l);color:var(--red)}.pill-warn{background:var(--amber-l);color:var(--amber)}.conf-bar{display:inline-block;width:40px;height:5px;background:var(--border);border-radius:2px;vertical-align:middle;margin-left:4px;overflow:hidden}.conf-fill{height:100%;border-radius:2px}.empty{text-align:center;color:var(--text3);padding:30px 12px;font-size:12px}.screen{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}.screen.active{display:flex}.scroll-body{flex:1;overflow-y:auto;padding:12px}.updated-pill{font-size:10px;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:20px;color:rgba(255,255,255,.7);white-space:nowrap}.feed-toggle{font-size:11px;padding:3px 10px;border-radius:20px;border:.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}.feed-toggle:hover{background:var(--bg3)}.active-toggle{background:var(--navy);color:#fff;border-color:var(--navy)}.face-marker{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer}input[type=date]::-webkit-inner-spin-button{display:none}.face-thumb{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);flex-shrink:0;background:var(--bg3)}.face-thumb-lg{width:88px;height:88px;border-radius:8px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px;display:block}.face-thumb-sm{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px}.no-face{width:56px;height:56px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--text3)}:root{--c-success:#0F6E56;--c-success-l:#E1F5EE;--c-miss:#A32D2D;--c-miss-l:#FDECEA;--c-pin:#5B3A8C;--c-pin-l:#F0EBFF;--c-reject:#C2400C;--c-reject-l:#FEE8DF;--c-lowconf:#854F0B;--c-lowconf-l:#FFF3CD;--c-info:#185FA5;--c-info-l:#E6F1FB}.l2-panel{display:none;border-bottom:.5px solid var(--border);background:var(--bg2);animation:slideDown .2s ease}.l2-panel.open{display:block}@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}.l2-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 14px}.l2-inner.cols2{grid-template-columns:repeat(2,1fr)}.l2-card{background:var(--bg);border:.5px solid var(--border);border-radius:8px;padding:10px 12px}.l2-card-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}.l2-big{font-size:22px;font-weight:600;margin-bottom:2px}.l2-sub{font-size:10px;color:var(--text3)}.l2-close{float:right;font-size:11px;color:var(--blue);cursor:pointer;background:none;border:none;font-weight:500;margin-top:-2px}.mc.active-l2{background:var(--navy)!important;color:#fff}.mc.active-l2 .mc-label,.mc.active-l2 .mc-sub{color:rgba(255,255,255,.6)}.mc.active-l2 .mc-val{color:#fff}.agent-filter-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:#E6F1FB;border-bottom:.5px solid var(--border);font-size:12px;color:var(--navy);flex-shrink:0}.agent-filter-bar.show{display:flex}.agent-filter-bar button{font-size:11px;padding:2px 8px;border-radius:20px;border:.5px solid var(--navy);background:transparent;color:var(--navy);cursor:pointer;margin-left:auto}.mk{width:16px;height:16px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);cursor:pointer;transition:transform .1s}.mk:hover{transform:scale(1.3)}.mk-success{background:var(--c-success)}.mk-miss{background:var(--c-miss)}.mk-pin{background:var(--c-pin)}.mk-reject{background:var(--c-reject)}.mk-info{background:var(--c-info)}.leaflet-popup-content-wrapper{border-radius:8px!important;box-shadow:0 4px 16px rgba(0,0,0,.15)!important}.leaflet-popup-content{margin:10px 12px!important}.score-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border:4px solid;margin:0 auto 8px}.dim-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border);cursor:pointer}.dim-row:last-child{border-bottom:none}.dim-row:hover{background:var(--bg3);margin:0 -12px;padding-left:12px;padding-right:12px}.dim-score{font-size:13px;font-weight:600;width:36px;flex-shrink:0;text-align:right}.dim-label{flex:1;font-size:12px}.dim-bar{width:80px;height:5px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}.dim-fill{height:100%;border-radius:2px}.dim-flag{font-size:10px;color:var(--c-miss);margin-left:4px}.expand-btn{font-size:10px;color:var(--blue);cursor:pointer;flex-shrink:0}.dim-detail{display:none;padding:8px 0 4px;font-size:11px;color:var(--text2)}.dim-detail.open{display:block}.risk-flag{display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border);font-size:11px}.risk-flag:last-child{border-bottom:none}.risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}#login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:99999;flex-direction:column;gap:0}#login-screen.hidden{display:none}.login-box{background:#fff;border-radius:12px;padding:32px 36px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25)}.login-logo{text-align:center;margin-bottom:24px}.login-logo h1{font-size:18px;font-weight:700;color:var(--navy);margin-top:8px}.login-logo p{font-size:12px;color:var(--text3);margin-top:3px}.login-field{margin-bottom:14px}.login-field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}.login-field input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;font-size:13px;color:var(--text);outline:none;transition:border .15s}.login-field input:focus{border-color:var(--blue)}.login-btn{width:100%;padding:10px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;transition:opacity .15s}.login-btn:hover{opacity:.88}.login-btn:disabled{opacity:.5;cursor:not-allowed}.login-error{background:var(--red-l);color:var(--red);border-radius:6px;padding:8px 10px;font-size:12px;margin-top:10px;display:none}.login-error.show{display:block}.login-spinner{display:none;text-align:center;margin-top:10px;font-size:12px;color:var(--text3)}.login-spinner.show{display:block}.login-tenant{font-size:11px;color:var(--text3);text-align:center;margin-top:14px}</style>
 </head>
 <body>
 <div class="app">
-
-<!-- Login screen -->
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div style="font-size:28px">🏥</div>
-      <h1>Bauchi FaceID War Room</h1>
-      <p>Pilot monitoring dashboard</p>
-    </div>
-
-    <!-- Tab toggle -->
-    <div style="display:flex;border:.5px solid #ddd;border-radius:8px;overflow:hidden;margin-bottom:18px">
-      <button id="tab-creds" onclick="switchLoginTab('creds')"
+<div class="login-box">
+<div class="login-logo">
+<div style="font-size:28px">🏥</div>
+<h1>Bauchi FaceID War Room</h1>
+<p>Pilot monitoring dashboard</p>
+</div>
+<div style="display:flex;border:.5px solid #ddd;border-radius:8px;overflow:hidden;margin-bottom:18px">
+<button id="tab-creds" onclick="switchLoginTab('creds')"
         style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;background:#1C3A52;color:#fff;cursor:pointer">
         Username &amp; Password
       </button>
-      <button id="tab-token" onclick="switchLoginTab('token')"
+<button id="tab-token" onclick="switchLoginTab('token')"
         style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;background:#f4f3ef;color:#555;cursor:pointer">
         Paste Token
       </button>
-    </div>
-
-    <!-- Credentials panel -->
-    <div id="panel-creds">
-      <div class="login-field">
-        <label>Username</label>
-        <input type="text" id="login-username" placeholder="Enter your username" autocomplete="username">
-      </div>
-      <div class="login-field">
-        <label>Password</label>
-        <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
-      </div>
-      <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
-    </div>
-
-    <!-- Token paste panel -->
-    <div id="panel-token" style="display:none">
-      <div class="login-field">
-        <label>Auth Token</label>
-        <textarea id="login-token" placeholder="Paste your DIGIT auth token here"
+</div>
+<div id="panel-creds">
+<div class="login-field">
+<label>Username</label>
+<input type="text" id="login-username" placeholder="Enter your username" autocomplete="username">
+</div>
+<div class="login-field">
+<label>Password</label>
+<input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+</div>
+<button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+</div>
+<div id="panel-token" style="display:none">
+<div class="login-field">
+<label>Auth Token</label>
+<textarea id="login-token" placeholder="Paste your DIGIT auth token here"
           style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:7px;font-size:12px;font-family:monospace;height:80px;resize:none;outline:none"></textarea>
-      </div>
-      <div style="font-size:11px;color:#999;margin-bottom:10px">
+</div>
+<div style="font-size:11px;color:#999;margin-bottom:10px">
         Get token by running:<br>
-        <code style="font-size:10px;background:#f4f3ef;padding:2px 6px;border-radius:4px;display:block;margin-top:4px;word-break:break-all">
+<code style="font-size:10px;background:#f4f3ef;padding:2px 6px;border-radius:4px;display:block;margin-top:4px;word-break:break-all">
           curl -s '.../user/oauth/token' ... | grep access_token
         </code>
-      </div>
-      <button class="login-btn" onclick="doTokenLogin()">Use token</button>
-    </div>
-
-    <div class="login-error" id="login-error"></div>
-    <div class="login-spinner" id="login-spinner">Signing in…</div>
-    <div class="login-tenant" style="margin-top:12px">Tenant: Bauchi State (ba) · DIGIT HCM</div>
-  </div>
 </div>
-
-<!-- Loading overlay -->
+<button class="login-btn" onclick="doTokenLogin()">Use token</button>
+</div>
+<div class="login-error" id="login-error"></div>
+<div class="login-spinner" id="login-spinner">Signing in…</div>
+<div class="login-tenant" style="margin-top:12px">Tenant: Bauchi State (ba) · DIGIT HCM</div>
+</div>
+</div>
 <div id="loading-overlay">
-  <div class="spinner"></div>
-  <div style="color:#fff;font-size:14px;font-weight:500">Bauchi FaceID War Room</div>
-  <div id="loading-msg">Connecting to DIGIT API…</div>
-  <div id="loading-sub">Fetching all face events</div>
+<div class="spinner"></div>
+<div style="color:#fff;font-size:14px;font-weight:500">Bauchi FaceID War Room</div>
+<div id="loading-msg">Connecting to DIGIT API…</div>
+<div id="loading-sub">Fetching all face events</div>
 </div>
-
-<!-- Error banner -->
 <div id="error-banner">
-  <span id="error-msg">Could not reach the DIGIT API.</span>
-  <button onclick="loadData()">Retry</button>
+<span id="error-msg">Could not reach the DIGIT API.</span>
+<button onclick="loadData()">Retry</button>
 </div>
-
-<!-- Topbar -->
 <div class="topbar">
-  <div class="topbar-left">
-    <h1><span class="live-dot" id="live-dot"></span>Bauchi FaceID Pilot — War Room</h1>
-    <p id="topbar-meta">Loading…</p>
-  </div>
-  <div class="topbar-right">
-    <select id="limit-select" onchange="loadData()" title="Events to fetch from API">
-      <option value="100">100 events</option>
-      <option value="500">500 events</option>
-      <option value="1000">1000 events</option>
-      <option value="5000">5000 events</option>
-      <option value="0">All events</option>
-    </select>
-    <input type="date" id="date-from" onchange="applyFilters()" title="From date"
+<div class="topbar-left">
+<h1><span class="live-dot" id="live-dot"></span>Bauchi FaceID Pilot — War Room</h1>
+<p id="topbar-meta">Loading…</p>
+</div>
+<div class="topbar-right">
+<select id="limit-select" onchange="loadData()" title="Events to fetch from API">
+<option value="100">100 events</option>
+<option value="500">500 events</option>
+<option value="1000">1000 events</option>
+<option value="5000">5000 events</option>
+<option value="0">All events</option>
+</select>
+<input type="date" id="date-from" onchange="applyFilters()" title="From date"
       style="font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:130px">
-    <span style="color:rgba(255,255,255,.5);font-size:11px">→</span>
-    <input type="date" id="date-to" onchange="applyFilters()" title="To date"
+<span style="color:rgba(255,255,255,.5);font-size:11px">→</span>
+<input type="date" id="date-to" onchange="applyFilters()" title="To date"
       style="font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:130px">
-    <button onclick="clearDates()" title="Clear date filter"
+<button onclick="clearDates()" title="Clear date filter"
       style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.7);cursor:pointer">✕</button>
-    <select id="filter-event" onchange="applyFilters()">
-      <option value="ALL">All events</option>
-      <option value="LOGIN">Login</option>
-      <option value="RE_VERIFY">Re-verify</option>
-      <option value="CHECK_IN">Check-in</option>
-      <option value="ENROLLMENT">Enrollment</option>
-    </select>
-    <select id="filter-outcome" onchange="applyFilters()">
-      <option value="ALL">All outcomes</option>
-      <option value="FACE_SUCCESS">Face success</option>
-      <option value="MISSED">Missed</option>
-      <option value="PIN_FALLBACK">PIN fallback</option>
-      <option value="FACE_REJECTED">Face rejected</option>
-    </select>
-    <span class="updated-pill" id="updated-pill">—</span>
-    <button class="refresh-btn" id="refresh-btn" onclick="loadData()">↻ Refresh</button>
-    <button class="refresh-btn" onclick="doLogout()" title="Sign out" style="background:rgba(255,255,255,.1)">⎋ Logout</button>
-  </div>
+<select id="filter-event" onchange="applyFilters()">
+<option value="ALL">All events</option>
+<option value="LOGIN">Login</option>
+<option value="RE_VERIFY">Re-verify</option>
+<option value="CHECK_IN">Check-in</option>
+<option value="ENROLLMENT">Enrollment</option>
+</select>
+<select id="filter-outcome" onchange="applyFilters()">
+<option value="ALL">All outcomes</option>
+<option value="FACE_SUCCESS">Face success</option>
+<option value="MISSED">Missed</option>
+<option value="PIN_FALLBACK">PIN fallback</option>
+<option value="FACE_REJECTED">Face rejected</option>
+</select>
+<span class="updated-pill" id="updated-pill">—</span>
+<button class="refresh-btn" id="refresh-btn" onclick="loadData()">↻ Refresh</button>
+<button class="refresh-btn" onclick="doLogout()" title="Sign out" style="background:rgba(255,255,255,.1)">⎋ Logout</button>
 </div>
-
-<!-- Tabs -->
+</div>
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('map',this)">Map</button>
-  <button class="tab" onclick="switchTab('agents',this)">Agents</button>
-  <button class="tab" onclick="switchTab('feed',this)">Event feed</button>
-  <button class="tab" onclick="switchTab('analytics',this)">Analytics</button>
+<button class="tab active" onclick="switchTab('map',this)">Map</button>
+<button class="tab" onclick="switchTab('agents',this)">Agents</button>
+<button class="tab" onclick="switchTab('feed',this)">Event feed</button>
+<button class="tab" onclick="switchTab('analytics',this)">Analytics</button>
 </div>
-
-<!-- L1 Metrics -->
 <div class="metric-strip">
-  <div class="mc active" id="mc-pass" onclick="toggleL2('pass',this)">
-    <div class="mc-label">Verif. pass rate</div>
-    <div class="mc-val" id="m-pass">—</div>
-    <div class="mc-sub" id="m-pass-sub">RE_VERIFY events</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-pass" style="background:#0F6E56"></div></div>
-  </div>
-  <div class="mc" id="mc-login" onclick="toggleL2('login',this)">
-    <div class="mc-label">Login pass rate</div>
-    <div class="mc-val" id="m-login">—</div>
-    <div class="mc-sub" id="m-login-sub">LOGIN events</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-login" style="background:#185FA5"></div></div>
-  </div>
-  <div class="mc" id="mc-pin" onclick="toggleL2('pin',this)"><div class="mc-label">PIN fallback rate</div><div class="mc-val" id="m-pin">—</div><div class="mc-sub" id="m-pin-sub">of all events</div><div class="mc-bar"><div class="mc-fill" id="mb-pin" style="background:#5B3A8C"></div></div></div>
-  <div class="mc" id="mc-conf" onclick="toggleL2('conf',this)">
-    <div class="mc-label">Avg confidence</div>
-    <div class="mc-val" id="m-conf">—</div>
-    <div class="mc-sub">Threshold ≥ 0.70</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-conf" style="background:#854F0B"></div></div>
-  </div>
-  <div class="mc" id="mc-miss" onclick="toggleL2('miss',this)">
-    <div class="mc-label">Missed / timeout</div>
-    <div class="mc-val" id="m-miss">—</div>
-    <div class="mc-sub" id="m-miss-sub">RE_VERIFY timeouts</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-miss" style="background:#A32D2D"></div></div>
-  </div>
-  <div class="mc" id="mc-agents">
-    <div class="mc-label">Unique agents</div>
-    <div class="mc-val" id="m-agents">—</div>
-    <div class="mc-sub" id="m-agents-sub">in filtered view</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-agents" style="background:#0F6E56;width:100%"></div></div>
-  </div>
+<div class="mc active" id="mc-pass" onclick="toggleL2('pass',this)">
+<div class="mc-label">Verif. pass rate</div>
+<div class="mc-val" id="m-pass">—</div>
+<div class="mc-sub" id="m-pass-sub">RE_VERIFY events</div>
+<div class="mc-bar"><div class="mc-fill" id="mb-pass" style="background:#0F6E56"></div></div>
 </div>
-
-
-<!-- L2 inline panel (slides open below metric strip) -->
+<div class="mc" id="mc-login" onclick="toggleL2('login',this)">
+<div class="mc-label">Login pass rate</div>
+<div class="mc-val" id="m-login">—</div>
+<div class="mc-sub" id="m-login-sub">LOGIN events</div>
+<div class="mc-bar"><div class="mc-fill" id="mb-login" style="background:#185FA5"></div></div>
+</div>
+<div class="mc" id="mc-pin" onclick="toggleL2('pin',this)"><div class="mc-label">PIN fallback rate</div><div class="mc-val" id="m-pin">—</div><div class="mc-sub" id="m-pin-sub">of all events</div><div class="mc-bar"><div class="mc-fill" id="mb-pin" style="background:#5B3A8C"></div></div></div>
+<div class="mc" id="mc-conf" onclick="toggleL2('conf',this)">
+<div class="mc-label">Avg confidence</div>
+<div class="mc-val" id="m-conf">—</div>
+<div class="mc-sub">Threshold ≥ 0.70</div>
+<div class="mc-bar"><div class="mc-fill" id="mb-conf" style="background:#854F0B"></div></div>
+</div>
+<div class="mc" id="mc-miss" onclick="toggleL2('miss',this)">
+<div class="mc-label">Missed / timeout</div>
+<div class="mc-val" id="m-miss">—</div>
+<div class="mc-sub" id="m-miss-sub">RE_VERIFY timeouts</div>
+<div class="mc-bar"><div class="mc-fill" id="mb-miss" style="background:#A32D2D"></div></div>
+</div>
+<div class="mc" id="mc-agents">
+<div class="mc-label">Unique agents</div>
+<div class="mc-val" id="m-agents">—</div>
+<div class="mc-sub" id="m-agents-sub">in filtered view</div>
+<div class="mc-bar"><div class="mc-fill" id="mb-agents" style="background:#0F6E56;width:100%"></div></div>
+</div>
+</div>
 <div class="l2-panel" id="l2-panel">
-  <div style="padding:6px 14px 0;display:flex;align-items:center;justify-content:space-between">
-    <span style="font-size:11px;font-weight:600;color:var(--text2)" id="l2-title">Detail</span>
-    <button class="l2-close" onclick="closeL2()">✕ Close</button>
-  </div>
-  <div class="l2-inner" id="l2-body"></div>
+<div style="padding:6px 14px 0;display:flex;align-items:center;justify-content:space-between">
+<span style="font-size:11px;font-weight:600;color:var(--text2)" id="l2-title">Detail</span>
+<button class="l2-close" onclick="closeL2()">✕ Close</button>
 </div>
-
-<!-- Agent filter banner -->
+<div class="l2-inner" id="l2-body"></div>
+</div>
 <div class="agent-filter-bar" id="agent-filter-bar">
-  <span>👤 Showing events for: <strong id="agent-filter-name"></strong></span>
-  <button onclick="clearAgentFilter()">✕ Show all agents</button>
+<span>👤 Showing events for: <strong id="agent-filter-name"></strong></span>
+<button onclick="clearAgentFilter()">✕ Show all agents</button>
 </div>
-
-<!-- MAP SCREEN -->
 <div id="screen-map" class="screen active">
-  <div class="main">
-    <div class="map-wrap">
-      <div id="map"></div>
-      <div class="map-layer-toggle">
-        <button class="mlt-btn active" id="lt-events" onclick="setMapView('events',this)">Event dots</button>
-        <button class="mlt-btn" id="lt-lga" onclick="setMapView('lga',this)">LGA choropleth</button>
-        <button class="mlt-btn" id="lt-ward" onclick="setMapView('ward',this)">Ward choropleth</button>
-      </div>
-      <div class="map-legend">
-        <div class="legend-title" id="legend-title">Event outcome</div>
-        <div id="legend-body">
-          <div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>Face success</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>Missed / timeout</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>PIN fallback</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#dc6f00"></div>Face rejected</div>
-          <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>
-        </div>
-      </div>
-    </div>
-    <div class="rpanel">
-      <div class="rp-header">
-        <span id="rp-title">Overview</span>
-        <button class="back-btn" id="rp-back" onclick="clearSelection()" style="display:none">← Back</button>
-      </div>
-      <div class="rp-body" id="rp-body"><div class="empty">Loading…</div></div>
-    </div>
-  </div>
+<div class="main">
+<div class="map-wrap">
+<div id="map"></div>
+<div class="map-layer-toggle">
+<button class="mlt-btn active" id="lt-events" onclick="setMapView('events',this)">Event dots</button>
+<button class="mlt-btn" id="lt-lga" onclick="setMapView('lga',this)">LGA choropleth</button>
+<button class="mlt-btn" id="lt-ward" onclick="setMapView('ward',this)">Ward choropleth</button>
 </div>
-
-<!-- AGENTS SCREEN -->
+<div class="map-legend">
+<div class="legend-title" id="legend-title">Event outcome</div>
+<div id="legend-body">
+<div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>Face success</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>Missed / timeout</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>PIN fallback</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#dc6f00"></div>Face rejected</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>
+</div>
+</div>
+</div>
+<div class="rpanel">
+<div class="rp-header">
+<span id="rp-title">Overview</span>
+<button class="back-btn" id="rp-back" onclick="clearSelection()" style="display:none">← Back</button>
+</div>
+<div class="rp-body" id="rp-body"><div class="empty">Loading…</div></div>
+</div>
+</div>
+</div>
 <div id="screen-agents" class="screen">
-  <div class="scroll-body">
-    <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center">
-      <span style="font-size:11px;color:var(--text2)">Filter:</span>
-      <select style="font-size:12px;padding:3px 7px" onchange="renderAgentTable(this.value)">
-        <option value="all">All agents</option>
-        <option value="fail">Has failures / misses</option>
-        <option value="below">Conf below threshold</option>
-      </select>
-    </div>
-    <table class="agt-table">
-      <thead>
-        <tr>
-          <th>Agent ID</th><th>Events</th><th>Pass</th><th>Missed</th><th>Avg conf</th><th>Last seen</th>
-        </tr>
-      </thead>
-      <tbody id="agent-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
-    </table>
-  </div>
+<div class="scroll-body">
+<div style="margin-bottom:8px;display:flex;gap:8px;align-items:center">
+<span style="font-size:11px;color:var(--text2)">Filter:</span>
+<select style="font-size:12px;padding:3px 7px" onchange="renderAgentTable(this.value)">
+<option value="all">All agents</option>
+<option value="fail">Has failures / misses</option>
+<option value="below">Conf below threshold</option>
+</select>
 </div>
-
-<!-- FEED SCREEN -->
+<table class="agt-table">
+<thead>
+<tr>
+<th>Agent ID</th><th>Events</th><th>Pass</th><th>Missed</th><th>Avg conf</th><th>Last seen</th>
+</tr>
+</thead>
+<tbody id="agent-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+</table>
+</div>
+</div>
 <div id="screen-feed" class="screen">
-  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--border);background:var(--bg2);flex-shrink:0">
-    <span style="font-size:11px;color:var(--text2);font-weight:500">Show:</span>
-    <button id="feed-all-btn" class="feed-toggle active-toggle" onclick="setFeedView('all',this)">All events</button>
-    <button id="feed-latest-btn" class="feed-toggle" onclick="setFeedView('latest',this)">Latest per agent</button>
-    <button id="feed-fails-btn" class="feed-toggle" onclick="setFeedView('fails',this)">Failures only</button>
-    <span id="feed-count" style="margin-left:auto;font-size:10px;color:var(--text3)"></span>
-  </div>
-  <div class="scroll-body" id="feed-body"><div class="empty">Loading…</div></div>
+<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--border);background:var(--bg2);flex-shrink:0">
+<span style="font-size:11px;color:var(--text2);font-weight:500">Show:</span>
+<button id="feed-all-btn" class="feed-toggle active-toggle" onclick="setFeedView('all',this)">All events</button>
+<button id="feed-latest-btn" class="feed-toggle" onclick="setFeedView('latest',this)">Latest per agent</button>
+<button id="feed-fails-btn" class="feed-toggle" onclick="setFeedView('fails',this)">Failures only</button>
+<span id="feed-count" style="margin-left:auto;font-size:10px;color:var(--text3)"></span>
 </div>
-
-<!-- ANALYTICS SCREEN -->
+<div class="scroll-body" id="feed-body"><div class="empty">Loading…</div></div>
+</div>
 <div id="screen-analytics" class="screen">
-  <div class="scroll-body">
-    <!-- System readiness score -->
-    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
-      <div class="bs-title" style="margin-bottom:10px">System readiness score</div>
-      <div style="display:flex;align-items:center;gap:16px">
-        <div id="a-score-ring" class="score-ring" style="border-color:#ccc;color:#ccc">—</div>
-        <div style="flex:1">
-          <div id="a-score-label" style="font-size:12px;color:var(--text2);margin-bottom:6px">Calculating…</div>
-          <div id="a-score-flags" style="font-size:11px;color:var(--c-miss)"></div>
-        </div>
-      </div>
-    </div>
-    <!-- Dimensions -->
-    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
-      <div class="bs-title" style="margin-bottom:4px">Score breakdown — click to expand</div>
-      <div id="a-dimensions"></div>
-    </div>
-    <!-- Two column sections -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">A — System Reliability (RE_VERIFY)</div>
-        <div id="a-reliability"><div class="empty">Loading…</div></div>
-      </div>
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">B — Accuracy &amp; Equity</div>
-        <div id="a-equity"><div class="empty">Loading…</div></div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">C — Attendance &amp; Coverage</div>
-        <div id="a-attendance"><div class="empty">Loading…</div></div>
-      </div>
-      <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">D — Risk Flags &amp; Blockers</div>
-        <div id="a-risks"><div class="empty">Loading…</div></div>
-      </div>
-    </div>
-    <!-- Boundary -->
-    <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-      <div class="bs-title">LGA breakdown <span style="font-weight:400;color:var(--text3)">(populates when boundaryCode set)</span></div>
-      <div id="a-boundary"><div class="empty">No boundaryCode data yet.</div></div>
-    </div>
-  </div>
+<div class="scroll-body">
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+<div class="bs-title" style="margin-bottom:10px">System readiness score</div>
+<div style="display:flex;align-items:center;gap:16px">
+<div id="a-score-ring" class="score-ring" style="border-color:#ccc;color:#ccc">—</div>
+<div style="flex:1">
+<div id="a-score-label" style="font-size:12px;color:var(--text2);margin-bottom:6px">Calculating…</div>
+<div id="a-score-flags" style="font-size:11px;color:var(--c-miss)"></div>
 </div>
-
-</div><!-- end .app -->
-
+</div>
+</div>
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+<div class="bs-title" style="margin-bottom:4px">Score breakdown — click to expand</div>
+<div id="a-dimensions"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+<div class="bs-title">A — System Reliability (RE_VERIFY)</div>
+<div id="a-reliability"><div class="empty">Loading…</div></div>
+</div>
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+<div class="bs-title">B — Accuracy &amp; Equity</div>
+<div id="a-equity"><div class="empty">Loading…</div></div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+<div class="bs-title">C — Attendance &amp; Coverage</div>
+<div id="a-attendance"><div class="empty">Loading…</div></div>
+</div>
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+<div class="bs-title">D — Risk Flags &amp; Blockers</div>
+<div id="a-risks"><div class="empty">Loading…</div></div>
+</div>
+</div>
+<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
+<div class="bs-title">LGA breakdown <span style="font-weight:400;color:var(--text3)">(populates when boundaryCode set)</span></div>
+<div id="a-boundary"><div class="empty">No boundaryCode data yet.</div></div>
+</div>
+</div>
+</div>
+</div>
 <script>
-/* ═══════════════════════════════════════════════
-   STATE
-   ═══════════════════════════════════════════════ */
 let RAW_EVENTS = [];
 let filteredEvents = [];
 let mapLayer = 'pass';
@@ -542,1328 +267,1118 @@ let selectedItem = null;
 let map, dotLayer, choroLayer;
 let isLoading = false;
 let feedView = 'all'; // 'all' | 'latest' | 'fails'
-let activeAgentFilter = null; // individualId or null
-let activeL2 = null; // which metric card is expanded
-
-/* ── Response time helper ── */
+let activeAgentFilter = null;
+let activeL2 = null;
 function parseResponseSecs(rt) {
-  // Format: '1970-01-01 00:00:52' → 52 seconds
-  if (!rt) return null;
-  try {
-    const parts = rt.split(' ');
-    if (parts.length < 2) return null;
-    const timeParts = parts[1].split(':').map(Number);
-    return timeParts[0]*3600 + timeParts[1]*60 + timeParts[2];
-  } catch { return null; }
+// Format: '1970-01-01 00:00:52' → 52 seconds
+if (!rt) return null;
+try {
+const parts = rt.split(' ');
+if (parts.length < 2) return null;
+const timeParts = parts[1].split(':').map(Number);
+return timeParts[0]*3600 + timeParts[1]*60 + timeParts[2];
+} catch { return null; }
 }
-
-/* ── Outcome colour — unified palette ── */
 function outcomeColor(o){
-  if(o==='FACE_SUCCESS')  return '#0F6E56';
-  if(o==='MISSED')        return '#A32D2D';
-  if(o==='PIN_FALLBACK')  return '#5B3A8C';
-  if(o==='FACE_REJECTED') return '#C2400C';
-  if(o==='FACE_FAIL')     return '#854F0B';
-  return '#185FA5';
+if(o==='FACE_SUCCESS')  return '#0F6E56';
+if(o==='MISSED')        return '#A32D2D';
+if(o==='PIN_FALLBACK')  return '#5B3A8C';
+if(o==='FACE_REJECTED') return '#C2400C';
+if(o==='FACE_FAIL')     return '#854F0B';
+return '#185FA5';
 }
-
-/* ── Agent filter ── */
 function filterByAgent(id) {
-  activeAgentFilter = id;
-  const banner = document.getElementById('agent-filter-bar');
-  banner.classList.add('show');
-  document.getElementById('agent-filter-name').textContent = shortId(id);
-  applyFilters();
+activeAgentFilter = id;
+const banner = document.getElementById('agent-filter-bar');
+banner.classList.add('show');
+document.getElementById('agent-filter-name').textContent = shortId(id);
+applyFilters();
 }
 function clearAgentFilter() {
-  activeAgentFilter = null;
-  document.getElementById('agent-filter-bar').classList.remove('show');
-  applyFilters();
+activeAgentFilter = null;
+document.getElementById('agent-filter-bar').classList.remove('show');
+applyFilters();
 }
-
 const AGENT_FACE = {};
 function cacheImages(events) {
-  events.forEach(e => { if (e.faceImage) AGENT_FACE[e.individualId] = e.faceImage; });
+events.forEach(e => { if (e.faceImage) AGENT_FACE[e.individualId] = e.faceImage; });
 }
 function setFaceImg(elementId, b64) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  el.innerHTML = '';
-  if (b64) {
-    const img = document.createElement('img');
-    img.src = 'data:image/jpeg;base64,' + b64;
-    img.className = el.dataset.cls || 'face-thumb-lg';
-    img.alt = 'Face scan';
-    el.appendChild(img);
-  } else {
-    el.textContent = '';
-  }
+const el = document.getElementById(elementId);
+if (!el) return;
+el.innerHTML = '';
+if (b64) {
+const img = document.createElement('img');
+img.src = 'data:image/jpeg;base64,' + b64;
+img.className = el.dataset.cls || 'face-thumb-lg';
+img.alt = 'Face scan';
+el.appendChild(img);
+} else {
+el.textContent = '';
 }
-
-/* ═══════════════════════════════════════════════
-   MOCK GeoJSON — replace with real file / API
-   Bauchi pilot: 3 LGAs, 1 ward each
-   ═══════════════════════════════════════════════ */
+}
 const GEOJSON = {
-  type:'FeatureCollection',
-  features:[
-    {type:'Feature',properties:{name:'Alkaleri',code:'BA-ALK',ward:'Alkaleri Ward'},
-      geometry:{type:'Polygon',coordinates:[[[10.1,9.6],[10.5,9.6],[10.5,10.0],[10.1,10.0],[10.1,9.6]]]}},
-    {type:'Feature',properties:{name:'Bauchi',code:'BA-BAU',ward:'Bauchi Central'},
-      geometry:{type:'Polygon',coordinates:[[[10.2,9.9],[10.7,9.9],[10.7,10.4],[10.2,10.4],[10.2,9.9]]]}},
-    {type:'Feature',properties:{name:'Toro',code:'BA-TOR',ward:'Toro Ward'},
-      geometry:{type:'Polygon',coordinates:[[[10.3,10.2],[10.8,10.2],[10.8,10.7],[10.3,10.7],[10.3,10.2]]]}},
-  ]
+type:'FeatureCollection',
+features:[
+{type:'Feature',properties:{name:'Alkaleri',code:'BA-ALK',ward:'Alkaleri Ward'},
+geometry:{type:'Polygon',coordinates:[[[10.1,9.6],[10.5,9.6],[10.5,10.0],[10.1,10.0],[10.1,9.6]]]}},
+{type:'Feature',properties:{name:'Bauchi',code:'BA-BAU',ward:'Bauchi Central'},
+geometry:{type:'Polygon',coordinates:[[[10.2,9.9],[10.7,9.9],[10.7,10.4],[10.2,10.4],[10.2,9.9]]]}},
+{type:'Feature',properties:{name:'Toro',code:'BA-TOR',ward:'Toro Ward'},
+geometry:{type:'Polygon',coordinates:[[[10.3,10.2],[10.8,10.2],[10.8,10.7],[10.3,10.7],[10.3,10.2]]]}},
+]
 };
-
-/* ═══════════════════════════════════════════════
-   API FETCH — calls /api/events proxy
-   ═══════════════════════════════════════════════ */
 async function loadData() {
-  if (isLoading) return;
-  isLoading = true;
-
-  const btn = document.getElementById('refresh-btn');
-  btn.classList.add('spinning');
-  btn.textContent = '↻ Loading…';
-
-  document.getElementById('error-banner').classList.remove('show');
-  document.getElementById('live-dot').classList.remove('red');
-
-  setLoadingMsg('Connecting to DIGIT API…', 'Fetching face events from Bauchi HCM');
-
-  try {
-    const limitVal = document.getElementById('limit-select').value;
-    const session = getSession();
-    const headers = { 'Content-Type': 'application/json' };
-    if (session?.authToken) {
-      headers['Authorization'] = 'Bearer ' + session.authToken;
-      if (session.userInfo) {
-        headers['X-User-Info'] = encodeURIComponent(JSON.stringify(session.userInfo));
-      }
-    }
-    const res = await fetch('/api/events?limit=' + limitVal, { headers });
-    // If 401, token expired — redirect to login
-    if (res.status === 401) {
-      clearSession();
-      location.reload();
-      return;
-    }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    if (!data.success) throw new Error(data.error || 'API returned failure');
-
-    RAW_EVENTS = data.events || [];
-    // Deduplicate raw events by id
-    const seen = new Set();
-    RAW_EVENTS = RAW_EVENTS.filter(e => {
-      if (!e.id) return true;
-      if (seen.has(e.id)) return false;
-      seen.add(e.id); return true;
-    });
-    cacheImages(RAW_EVENTS);
-
-    const fetched = new Date(data.fetchedAt);
-    document.getElementById('updated-pill').textContent =
-      'Updated ' + fetched.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-
-    setLoadingMsg('Building dashboard…', `${RAW_EVENTS.length} events loaded`);
-
-    filteredEvents = [...RAW_EVENTS];
-    // Auto-set date range to span of loaded data
-    const dates = RAW_EVENTS.map(e=>e.timestamp).filter(Boolean).sort();
-    if(dates.length){
-      const earliest = dates[0].slice(0,10);
-      const latest   = dates[dates.length-1].slice(0,10);
-      const fromEl = document.getElementById('date-from');
-      const toEl   = document.getElementById('date-to');
-      if(!fromEl.value) fromEl.value = earliest;
-      if(!toEl.value)   toEl.value   = latest;
-    }
-    applyFilters();
-    hideLoading();
-
-  } catch (err) {
-    console.error('Load error:', err);
-    document.getElementById('live-dot').classList.add('red');
-    document.getElementById('error-msg').textContent =
-      `Could not reach the DIGIT API: ${err.message}. Showing any cached data.`;
-    document.getElementById('error-banner').classList.add('show');
-
-    // If we have cached data still show it
-    if (RAW_EVENTS.length) {
-      filteredEvents = [...RAW_EVENTS];
-      applyFilters();
-    }
-    hideLoading();
-  } finally {
-    isLoading = false;
-    btn.classList.remove('spinning');
-    btn.textContent = '↻ Refresh';
-  }
+if (isLoading) return;
+isLoading = true;
+const btn = document.getElementById('refresh-btn');
+btn.classList.add('spinning');
+btn.textContent = '↻ Loading…';
+document.getElementById('error-banner').classList.remove('show');
+document.getElementById('live-dot').classList.remove('red');
+setLoadingMsg('Connecting to DIGIT API…', 'Fetching face events from Bauchi HCM');
+try {
+const limitVal = document.getElementById('limit-select').value;
+const session = getSession();
+const headers = { 'Content-Type': 'application/json' };
+if (session?.authToken) {
+headers['Authorization'] = 'Bearer ' + session.authToken;
+if (session.userInfo) {
+headers['X-User-Info'] = encodeURIComponent(JSON.stringify(session.userInfo));
 }
-
+}
+const res = await fetch('/api/events?limit=' + limitVal, { headers });
+if (res.status === 401) {
+clearSession();
+location.reload();
+return;
+}
+if (!res.ok) throw new Error(`HTTP ${res.status}`);
+const data = await res.json();
+if (!data.success) throw new Error(data.error || 'API returned failure');
+RAW_EVENTS = data.events || [];
+const seen = new Set();
+RAW_EVENTS = RAW_EVENTS.filter(e => {
+if (!e.id) return true;
+if (seen.has(e.id)) return false;
+seen.add(e.id); return true;
+});
+cacheImages(RAW_EVENTS);
+const fetched = new Date(data.fetchedAt);
+document.getElementById('updated-pill').textContent =
+'Updated ' + fetched.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+setLoadingMsg('Building dashboard…', `${RAW_EVENTS.length} events loaded`);
+filteredEvents = [...RAW_EVENTS];
+const dates = RAW_EVENTS.map(e=>e.timestamp).filter(Boolean).sort();
+if(dates.length){
+const earliest = dates[0].slice(0,10);
+const latest   = dates[dates.length-1].slice(0,10);
+const fromEl = document.getElementById('date-from');
+const toEl   = document.getElementById('date-to');
+if(!fromEl.value) fromEl.value = earliest;
+if(!toEl.value)   toEl.value   = latest;
+}
+applyFilters();
+hideLoading();
+} catch (err) {
+console.error('Load error:', err);
+document.getElementById('live-dot').classList.add('red');
+document.getElementById('error-msg').textContent =
+`Could not reach the DIGIT API: ${err.message}. Showing any cached data.`;
+document.getElementById('error-banner').classList.add('show');
+if (RAW_EVENTS.length) {
+filteredEvents = [...RAW_EVENTS];
+applyFilters();
+}
+hideLoading();
+} finally {
+isLoading = false;
+btn.classList.remove('spinning');
+btn.textContent = '↻ Refresh';
+}
+}
 function setLoadingMsg(msg, sub) {
-  document.getElementById('loading-msg').textContent = msg;
-  document.getElementById('loading-sub').textContent = sub || '';
+document.getElementById('loading-msg').textContent = msg;
+document.getElementById('loading-sub').textContent = sub || '';
 }
-
 function hideLoading() {
-  const ov = document.getElementById('loading-overlay');
-  ov.classList.add('fade');
-  setTimeout(() => ov.style.display = 'none', 400);
+const ov = document.getElementById('loading-overlay');
+ov.classList.add('fade');
+setTimeout(() => ov.style.display = 'none', 400);
 }
-
-/* ═══════════════════════════════════════════════
-   HELPERS
-   ═══════════════════════════════════════════════ */
 function pct(n,d){ return d ? Math.round(n/d*100) : 0; }
 function confColor(c){
-  if(c>=0.85) return '#0F6E56';
-  if(c>=0.70) return '#854F0B';
-  if(c>0)     return '#A32D2D';
-  return '#9ca3af';
+if(c>=0.85) return '#0F6E56';
+if(c>=0.70) return '#854F0B';
+if(c>0)     return '#A32D2D';
+return '#9ca3af';
 }
-
 function shortId(id){ return id ? id.slice(0,8)+'…' : '—'; }
 function timeStr(ts){
-  if(!ts) return '—';
-  const d = new Date(ts.replace(' ','T'));
-  return isNaN(d) ? ts : d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+if(!ts) return '—';
+const d = new Date(ts.replace(' ','T'));
+return isNaN(d) ? ts : d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 function barHTML(label, val, max, color, isPct=false){
-  const w = max ? Math.min(100, Math.round(val/max*100)) : 0;
-  const display = isPct ? val+'%' : val;
-  return `<div class="bar-row">
-    <span class="bar-label">${label}</span>
-    <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
-    <span class="bar-val">${display}</span>
-  </div>`;
+const w = max ? Math.min(100, Math.round(val/max*100)) : 0;
+const display = isPct ? val+'%' : val;
+return `<div class="bar-row">
+<span class="bar-label">${label}</span>
+<div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
+<span class="bar-val">${display}</span>
+</div>`;
 }
-
-/* ═══════════════════════════════════════════════
-   AGGREGATE
-   ═══════════════════════════════════════════════ */
 function aggregate(events){
-  const reverify = events.filter(e=>e.eventType==='RE_VERIFY');
-  const login    = events.filter(e=>e.eventType==='LOGIN');
-  const checkin  = events.filter(e=>e.eventType==='CHECK_IN');
-  const enroll   = events.filter(e=>e.eventType==='ENROLLMENT');
-  const rvPass   = reverify.filter(e=>e.outcome==='FACE_SUCCESS').length;
-  const lgPass   = login.filter(e=>e.outcome==='FACE_SUCCESS').length;
-  const ciPass   = checkin.filter(e=>e.outcome==='FACE_SUCCESS').length;
-  const missed   = events.filter(e=>e.outcome==='MISSED').length;
-  const pinFall  = events.filter(e=>e.outcome==='PIN_FALLBACK').length;
-  const rejected = events.filter(e=>e.outcome==='FACE_REJECTED').length;
-  const withConf = events.filter(e=>e.confidence>0);
-  const avgConf  = withConf.length ? withConf.reduce((a,e)=>a+e.confidence,0)/withConf.length : 0;
-  return {
-    total: events.length,
-    reverify: reverify.length, login: login.length,
-    checkin: checkin.length,  enroll: enroll.length,
-    rvPass, lgPass, ciPass, missed, pinFall, rejected, avgConf,
-    agents: new Set(events.map(e=>e.individualId)).size,
-    rvPassRate: pct(rvPass, reverify.length),
-    lgPassRate: pct(lgPass, login.length),
-    ciPassRate: pct(ciPass, checkin.length),
-    missRate:   pct(missed, reverify.length),
-    pinRate:    pct(pinFall, events.length),
-  };
+const reverify = events.filter(e=>e.eventType==='RE_VERIFY');
+const login    = events.filter(e=>e.eventType==='LOGIN');
+const checkin  = events.filter(e=>e.eventType==='CHECK_IN');
+const enroll   = events.filter(e=>e.eventType==='ENROLLMENT');
+const rvPass   = reverify.filter(e=>e.outcome==='FACE_SUCCESS').length;
+const lgPass   = login.filter(e=>e.outcome==='FACE_SUCCESS').length;
+const ciPass   = checkin.filter(e=>e.outcome==='FACE_SUCCESS').length;
+const missed   = events.filter(e=>e.outcome==='MISSED').length;
+const pinFall  = events.filter(e=>e.outcome==='PIN_FALLBACK').length;
+const rejected = events.filter(e=>e.outcome==='FACE_REJECTED').length;
+const withConf = events.filter(e=>e.confidence>0);
+const avgConf  = withConf.length ? withConf.reduce((a,e)=>a+e.confidence,0)/withConf.length : 0;
+return {
+total: events.length,
+reverify: reverify.length, login: login.length,
+checkin: checkin.length,  enroll: enroll.length,
+rvPass, lgPass, ciPass, missed, pinFall, rejected, avgConf,
+agents: new Set(events.map(e=>e.individualId)).size,
+rvPassRate: pct(rvPass, reverify.length),
+lgPassRate: pct(lgPass, login.length),
+ciPassRate: pct(ciPass, checkin.length),
+missRate:   pct(missed, reverify.length),
+pinRate:    pct(pinFall, events.length),
+};
 }
-
 function agentStats(events){
-  const m = {};
-  events.forEach(e=>{
-    if(!m[e.individualId]) m[e.individualId]={total:0,pass:0,miss:0,fail:0,confs:[],last:null};
-    const a = m[e.individualId];
-    a.total++;
-    if(e.outcome==='FACE_SUCCESS') a.pass++;
-    if(e.outcome==='MISSED')       a.miss++;
-    if(e.outcome==='FACE_FAIL')    a.fail++;
-    if(e.confidence>0) a.confs.push(e.confidence);
-    if(!a.last || e.timestamp > a.last) a.last = e.timestamp;
-  });
-  return m;
+const m = {};
+events.forEach(e=>{
+if(!m[e.individualId]) m[e.individualId]={total:0,pass:0,miss:0,fail:0,confs:[],last:null};
+const a = m[e.individualId];
+a.total++;
+if(e.outcome==='FACE_SUCCESS') a.pass++;
+if(e.outcome==='MISSED')       a.miss++;
+if(e.outcome==='FACE_FAIL')    a.fail++;
+if(e.confidence>0) a.confs.push(e.confidence);
+if(!a.last || e.timestamp > a.last) a.last = e.timestamp;
+});
+return m;
 }
-
-/* ═══════════════════════════════════════════════
-   FILTERS
-   ═══════════════════════════════════════════════ */
 function applyFilters(){
-  const et   = document.getElementById('filter-event').value;
-  const oc   = document.getElementById('filter-outcome').value;
-  const from = document.getElementById('date-from').value;
-  const to   = document.getElementById('date-to').value;
-
-  filteredEvents = RAW_EVENTS.filter(e=>{
-    if(et!=='ALL' && e.eventType!==et) return false;
-    if(oc!=='ALL' && e.outcome!==oc)   return false;
-    if(activeAgentFilter && e.individualId !== activeAgentFilter) return false;
-    if(e.timestamp){
-      const evDate = e.timestamp.slice(0,10);
-      if(from && evDate < from) return false;
-      if(to   && evDate > to)   return false;
-    }
-    return true;
-  });
-  updateAll();
+const et   = document.getElementById('filter-event').value;
+const oc   = document.getElementById('filter-outcome').value;
+const from = document.getElementById('date-from').value;
+const to   = document.getElementById('date-to').value;
+filteredEvents = RAW_EVENTS.filter(e=>{
+if(et!=='ALL' && e.eventType!==et) return false;
+if(oc!=='ALL' && e.outcome!==oc)   return false;
+if(activeAgentFilter && e.individualId !== activeAgentFilter) return false;
+if(e.timestamp){
+const evDate = e.timestamp.slice(0,10);
+if(from && evDate < from) return false;
+if(to   && evDate > to)   return false;
 }
-
+return true;
+});
+updateAll();
+}
 function clearDates(){
-  document.getElementById('date-from').value = '';
-  document.getElementById('date-to').value   = '';
-  applyFilters();
+document.getElementById('date-from').value = '';
+document.getElementById('date-to').value   = '';
+applyFilters();
 }
-
-/* ═══════════════════════════════════════════════
-   UPDATE ALL
-   ═══════════════════════════════════════════════ */
 function updateAll(){
-  updateMetricStrip();
-  updateMap();
-  renderRightPanel();
-  renderFeed();
-  setTimeout(fillFeedAvatars, 50);
-  renderAnalytics();
-  renderAgentTable('all');
-  setTimeout(fillAvatars, 50);
-
-  const dates = filteredEvents.map(e=>e.timestamp).filter(Boolean).sort();
-  const agg = aggregate(filteredEvents);
-  document.getElementById('topbar-meta').textContent =
-    (()=>{
-      const from = document.getElementById('date-from').value;
-      const to   = document.getElementById('date-to').value;
-      const dateRange = (from||to) ? ` · ${from||'…'} → ${to||'…'}` : '';
-      return `Bauchi State · ${filteredEvents.length} events · ${agg.agents} agents${dateRange}`;
-    })();
+updateMetricStrip();
+updateMap();
+renderRightPanel();
+renderFeed();
+setTimeout(fillFeedAvatars, 50);
+renderAnalytics();
+renderAgentTable('all');
+setTimeout(fillAvatars, 50);
+const dates = filteredEvents.map(e=>e.timestamp).filter(Boolean).sort();
+const agg = aggregate(filteredEvents);
+document.getElementById('topbar-meta').textContent =
+(()=>{
+const from = document.getElementById('date-from').value;
+const to   = document.getElementById('date-to').value;
+const dateRange = (from||to) ? ` · ${from||'…'} → ${to||'…'}` : '';
+return `Bauchi State · ${filteredEvents.length} events · ${agg.agents} agents${dateRange}`;
+})();
 }
-
-/* ═══════════════════════════════════════════════
-   METRIC STRIP
-   ═══════════════════════════════════════════════ */
 function updateMetricStrip(){
-  const a = aggregate(filteredEvents);
-  const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-  const setStyle = (id, prop, val) => { const el = document.getElementById(id); if(el) el.style[prop] = val; };
-  setEl('m-pass', a.reverify ? a.rvPassRate+'%' : '—');
-  setEl('m-pass-sub', a.reverify+' RE_VERIFY events');
-  setStyle('mb-pass','width', a.rvPassRate+'%');
-  setStyle('mb-pass','background', a.rvPassRate>=75?'#0F6E56':'#A32D2D');
-  setEl('m-login', a.login ? a.lgPassRate+'%' : '—');
-  setEl('m-login-sub', a.login+' LOGIN events');
-  setStyle('mb-login','width', a.lgPassRate+'%');
-  setStyle('mb-login','background', a.lgPassRate>=85?'#0F6E56':'#854F0B');
-
-  setEl('m-conf', a.avgConf ? (a.avgConf*100).toFixed(1)+'%' : '—');
-  setStyle('mb-conf','width',(a.avgConf*100)+'%');
-  setStyle('mb-conf','background',confColor(a.avgConf));
-  setEl('m-miss', a.reverify ? a.missRate+'%' : '—');
-  setStyle('mb-miss','width', a.missRate+'%');
-  setStyle('mb-miss','background','#A32D2D');
-  // PIN card
-  setEl('m-pin', a.total ? a.pinRate+'%' : '—');
-  setEl('m-pin-sub', a.pinFall+' PIN fallbacks');
-  setStyle('mb-pin','width', a.pinRate+'%');
-  setStyle('mb-pin','background','#5B3A8C');
-  setEl('m-agents', a.agents);
+const a = aggregate(filteredEvents);
+const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+const setStyle = (id, prop, val) => { const el = document.getElementById(id); if(el) el.style[prop] = val; };
+setEl('m-pass', a.reverify ? a.rvPassRate+'%' : '—');
+setEl('m-pass-sub', a.reverify+' RE_VERIFY events');
+setStyle('mb-pass','width', a.rvPassRate+'%');
+setStyle('mb-pass','background', a.rvPassRate>=75?'#0F6E56':'#A32D2D');
+setEl('m-login', a.login ? a.lgPassRate+'%' : '—');
+setEl('m-login-sub', a.login+' LOGIN events');
+setStyle('mb-login','width', a.lgPassRate+'%');
+setStyle('mb-login','background', a.lgPassRate>=85?'#0F6E56':'#854F0B');
+setEl('m-conf', a.avgConf ? (a.avgConf*100).toFixed(1)+'%' : '—');
+setStyle('mb-conf','width',(a.avgConf*100)+'%');
+setStyle('mb-conf','background',confColor(a.avgConf));
+setEl('m-miss', a.reverify ? a.missRate+'%' : '—');
+setStyle('mb-miss','width', a.missRate+'%');
+setStyle('mb-miss','background','#A32D2D');
+setEl('m-pin', a.total ? a.pinRate+'%' : '—');
+setEl('m-pin-sub', a.pinFall+' PIN fallbacks');
+setStyle('mb-pin','width', a.pinRate+'%');
+setStyle('mb-pin','background','#5B3A8C');
+setEl('m-agents', a.agents);
 }
-
-
-/* ═══════════════════════════════════════════════
-   L2 INLINE DRILL-DOWN
-   ═══════════════════════════════════════════════ */
 function toggleL2(metric, el) {
-  const panel = document.getElementById('l2-panel');
-  if (activeL2 === metric) {
-    closeL2(); return;
-  }
-  activeL2 = metric;
-  document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active-l2'));
-  el.classList.add('active-l2');
-  panel.classList.add('open');
-  renderL2(metric);
+const panel = document.getElementById('l2-panel');
+if (activeL2 === metric) {
+closeL2(); return;
 }
-
+activeL2 = metric;
+document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active-l2'));
+el.classList.add('active-l2');
+panel.classList.add('open');
+renderL2(metric);
+}
 function closeL2() {
-  activeL2 = null;
-  document.getElementById('l2-panel').classList.remove('open');
-  document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active-l2'));
+activeL2 = null;
+document.getElementById('l2-panel').classList.remove('open');
+document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active-l2'));
 }
-
 function l2Bar(label, val, max, color, isPct=false) {
-  const w = max ? Math.min(100, Math.round(val/max*100)) : 0;
-  const display = isPct ? val+'%' : val;
-  return `<div class="bar-row">
-    <span class="bar-label" style="width:100px">${label}</span>
-    <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
-    <span class="bar-val">${display}</span>
-  </div>`;
+const w = max ? Math.min(100, Math.round(val/max*100)) : 0;
+const display = isPct ? val+'%' : val;
+return `<div class="bar-row">
+<span class="bar-label" style="width:100px">${label}</span>
+<div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div>
+<span class="bar-val">${display}</span>
+</div>`;
 }
-
 function renderL2(metric) {
-  const ev = filteredEvents;
-  const titles = {
-    pass:'RE_VERIFY — deep dive',
-    login:'Login — deep dive',
-    conf:'Confidence — deep dive',
-    miss:'Missed / timeout — deep dive',
-    pin:'PIN fallback — deep dive'
-  };
-  document.getElementById('l2-title').textContent = titles[metric]||metric;
-
-  const body = document.getElementById('l2-body');
-
-  if (metric === 'pass') {
-    const rv = ev.filter(e=>e.eventType==='RE_VERIFY');
-    const pass = rv.filter(e=>e.outcome==='FACE_SUCCESS');
-    const miss = rv.filter(e=>e.outcome==='MISSED');
-    const pin  = rv.filter(e=>e.outcome==='PIN_FALLBACK');
-    // Avg attempts for success (failedAttemptCount + 1)
-    const attempts = pass.map(e=>(e.failedAttemptCount||0)+1);
-    const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
-    const first = attempts.filter(a=>a===1).length;
-    const second = attempts.filter(a=>a===2).length;
-    const third = attempts.filter(a=>a>=3).length;
-    // Response duration
-    const durations = rv.filter(e=>e.responseTime).map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
-    const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
-    const passD  = pass.filter(e=>e.responseTime).map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
-    const avgPassDur = passD.length ? Math.round(passD.reduce((a,b)=>a+b,0)/passD.length) : null;
-
-    body.className = 'l2-inner';
-    body.innerHTML = `
-      <div class="l2-card">
-        <div class="l2-card-title">Outcome split</div>
-        ${l2Bar('Pass',pass.length,rv.length,'#0F6E56')}
-        ${l2Bar('Missed',miss.length,rv.length,'#A32D2D')}
-        ${l2Bar('PIN fallback',pin.length,rv.length,'#5B3A8C')}
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Attempts before success</div>
-        <div class="l2-big" style="color:#0F6E56">${avgAttempts}</div>
-        <div class="l2-sub">avg attempts (success events)</div>
-        <div style="margin-top:8px">
-          ${l2Bar('1st attempt',first,pass.length,'#0F6E56')}
-          ${l2Bar('2nd attempt',second,pass.length,'#854F0B')}
-          ${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
-        </div>
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Response duration (popup→done)</div>
-        <div class="l2-big" style="color:#185FA5">${avgDur !== null ? avgDur+'s' : '—'}</div>
-        <div class="l2-sub">avg across all RE_VERIFY</div>
-        <div style="margin-top:6px;font-size:11px;color:var(--text2)">
-          <div>✓ Pass avg: <b>${avgPassDur !== null ? avgPassDur+'s' : '—'}</b></div>
-          <div>Total with response: <b>${durations.length}</b></div>
-          <div>No response (timeout): <b>${rv.length - durations.length}</b></div>
-        </div>
-      </div>`;
-  }
-
-  else if (metric === 'login') {
-    const lg = ev.filter(e=>e.eventType==='LOGIN');
-    const pass = lg.filter(e=>e.outcome==='FACE_SUCCESS');
-    const pin  = lg.filter(e=>e.outcome==='PIN_FALLBACK');
-    const fail = lg.filter(e=>e.outcome==='FACE_FAIL'||e.outcome==='FACE_REJECTED');
-    const attempts = pass.map(e=>(e.failedAttemptCount||0)+1);
-    const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
-    const first = attempts.filter(a=>a===1).length;
-    const second = attempts.filter(a=>a===2).length;
-    const third = attempts.filter(a=>a>=3).length;
-    // Per agent pass rate
-    const byAgent = {};
-    lg.forEach(e=>{ if(!byAgent[e.individualId]) byAgent[e.individualId]={t:0,p:0}; byAgent[e.individualId].t++; if(e.outcome==='FACE_SUCCESS') byAgent[e.individualId].p++; });
-    const worstAgents = Object.entries(byAgent).filter(([,s])=>s.t>1).sort((a,b)=>pct(a[1].p,a[1].t)-pct(b[1].p,b[1].t)).slice(0,3);
-
-    body.className = 'l2-inner';
-    body.innerHTML = `
-      <div class="l2-card">
-        <div class="l2-card-title">Outcome split</div>
-        ${l2Bar('Face pass',pass.length,lg.length,'#0F6E56')}
-        ${l2Bar('PIN fallback',pin.length,lg.length,'#5B3A8C')}
-        ${l2Bar('Failed',fail.length,lg.length,'#A32D2D')}
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Attempts before success</div>
-        <div class="l2-big" style="color:#0F6E56">${avgAttempts}</div>
-        <div class="l2-sub">avg attempts</div>
-        <div style="margin-top:8px">
-          ${l2Bar('1st attempt',first,pass.length,'#0F6E56')}
-          ${l2Bar('2nd attempt',second,pass.length,'#854F0B')}
-          ${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
-        </div>
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Lowest login pass rate</div>
-        ${worstAgents.map(([id,s])=>l2Bar(shortId(id),pct(s.p,s.t),100,pct(s.p,s.t)>=75?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
-        <div class="l2-sub" style="margin-top:6px">agents with >1 login</div>
-      </div>`;
-  }
-
-  else if (metric === 'conf') {
-    const face = ev.filter(e=>e.confidence>0);
-    const buckets = [
-      {label:'≥ 85%', min:0.85, max:1.01, color:'#0F6E56'},
-      {label:'75–84%',min:0.70, max:0.85,  color:'#854F0B'},
-      {label:'50–74%',min:0.50, max:0.70,  color:'#C2400C'},
-      {label:'< 50%', min:0,    max:0.50,  color:'#A32D2D'},
-    ];
-    const counts = buckets.map(b=>({...b, count: face.filter(e=>e.confidence>=b.min && e.confidence<b.max).length}));
-    const below = face.filter(e=>e.confidence<0.70);
-    const byAgent = {};
-    face.forEach(e=>{
-      if(!byAgent[e.individualId]) byAgent[e.individualId]=[];
-      byAgent[e.individualId].push(e.confidence);
-    });
-    const agentAvgs = Object.entries(byAgent).map(([id,cs])=>({id,avg:cs.reduce((a,b)=>a+b,0)/cs.length})).sort((a,b)=>a.avg-b.avg).slice(0,4);
-
-    body.className = 'l2-inner cols2';
-    body.innerHTML = `
-      <div class="l2-card">
-        <div class="l2-card-title">Score distribution</div>
-        ${counts.map(b=>l2Bar(b.label,b.count,face.length,b.color)).join('')}
-        <div class="l2-sub" style="margin-top:6px">${face.length} face scans total</div>
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Lowest avg confidence agents</div>
-        ${agentAvgs.map(a=>l2Bar(shortId(a.id),Math.round(a.avg*100),100,a.avg>=0.70?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
-        <div class="l2-sub" style="margin-top:6px">${below.length} scans below 0.75 threshold</div>
-      </div>`;
-  }
-
-  else if (metric === 'miss') {
-    const rv = ev.filter(e=>e.eventType==='RE_VERIFY');
-    const miss = rv.filter(e=>e.outcome==='MISSED');
-    const byAgent = {};
-    miss.forEach(e=>{ byAgent[e.individualId]=(byAgent[e.individualId]||0)+1; });
-    const topMiss = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]).slice(0,4);
-    // Time of day distribution
-    const hours = {};
-    miss.forEach(e=>{
-      if(e.timestamp){ const h = parseInt(e.timestamp.slice(11,13)); hours[h]=(hours[h]||0)+1; }
-    });
-    const topHours = Object.entries(hours).sort((a,b)=>b[1]-a[1]).slice(0,4);
-
-    body.className = 'l2-inner cols2';
-    body.innerHTML = `
-      <div class="l2-card">
-        <div class="l2-card-title">Agents with most misses</div>
-        ${topMiss.map(([id,n])=>l2Bar(shortId(id),n,miss.length,'#A32D2D')).join('')||'<div class="empty">No misses</div>'}
-        <div class="l2-sub" style="margin-top:6px">${miss.length} total timeouts</div>
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Misses by hour of day</div>
-        ${topHours.map(([h,n])=>l2Bar(h+':00',n,miss.length,'#854F0B')).join('')||'<div class="empty">—</div>'}
-        <div class="l2-sub" style="margin-top:6px">Top 4 hours with most misses</div>
-      </div>`;
-  }
-
-  else if (metric === 'pin') {
-    const pins = ev.filter(e=>e.outcome==='PIN_FALLBACK');
-    const loginPins = pins.filter(e=>e.eventType==='LOGIN');
-    const rvPins    = pins.filter(e=>e.eventType==='RE_VERIFY');
-    const byAgent = {};
-    pins.forEach(e=>{ byAgent[e.individualId]=(byAgent[e.individualId]||0)+1; });
-    const topPin = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]).slice(0,4);
-
-    body.className = 'l2-inner cols2';
-    body.innerHTML = `
-      <div class="l2-card">
-        <div class="l2-card-title">PIN by event type</div>
-        ${l2Bar('Login PIN',loginPins.length,pins.length,'#5B3A8C')}
-        ${l2Bar('RE_VERIFY PIN',rvPins.length,pins.length,'#5B3A8C')}
-        <div class="l2-sub" style="margin-top:6px">${pins.length} total PIN fallbacks</div>
-      </div>
-      <div class="l2-card">
-        <div class="l2-card-title">Agents using PIN most</div>
-        ${topPin.map(([id,n])=>l2Bar(shortId(id),n,pins.length,'#5B3A8C')).join('')||'<div class="empty">No PIN events</div>'}
-      </div>`;
-  }
+const ev = filteredEvents;
+const titles = {
+pass:'RE_VERIFY — deep dive',
+login:'Login — deep dive',
+conf:'Confidence — deep dive',
+miss:'Missed / timeout — deep dive',
+pin:'PIN fallback — deep dive'
+};
+document.getElementById('l2-title').textContent = titles[metric]||metric;
+const body = document.getElementById('l2-body');
+if (metric === 'pass') {
+const rv = ev.filter(e=>e.eventType==='RE_VERIFY');
+const pass = rv.filter(e=>e.outcome==='FACE_SUCCESS');
+const miss = rv.filter(e=>e.outcome==='MISSED');
+const pin  = rv.filter(e=>e.outcome==='PIN_FALLBACK');
+const attempts = pass.map(e=>(e.failedAttemptCount||0)+1);
+const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
+const first = attempts.filter(a=>a===1).length;
+const second = attempts.filter(a=>a===2).length;
+const third = attempts.filter(a=>a>=3).length;
+const durations = rv.filter(e=>e.responseTime).map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
+const passD  = pass.filter(e=>e.responseTime).map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+const avgPassDur = passD.length ? Math.round(passD.reduce((a,b)=>a+b,0)/passD.length) : null;
+body.className = 'l2-inner';
+body.innerHTML = `
+<div class="l2-card">
+<div class="l2-card-title">Outcome split</div>
+${l2Bar('Pass',pass.length,rv.length,'#0F6E56')}
+${l2Bar('Missed',miss.length,rv.length,'#A32D2D')}
+${l2Bar('PIN fallback',pin.length,rv.length,'#5B3A8C')}
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Attempts before success</div>
+<div class="l2-big" style="color:#0F6E56">${avgAttempts}</div>
+<div class="l2-sub">avg attempts (success events)</div>
+<div style="margin-top:8px">
+${l2Bar('1st attempt',first,pass.length,'#0F6E56')}
+${l2Bar('2nd attempt',second,pass.length,'#854F0B')}
+${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
+</div>
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Response duration (popup→done)</div>
+<div class="l2-big" style="color:#185FA5">${avgDur !== null ? avgDur+'s' : '—'}</div>
+<div class="l2-sub">avg across all RE_VERIFY</div>
+<div style="margin-top:6px;font-size:11px;color:var(--text2)">
+<div>✓ Pass avg: <b>${avgPassDur !== null ? avgPassDur+'s' : '—'}</b></div>
+<div>Total with response: <b>${durations.length}</b></div>
+<div>No response (timeout): <b>${rv.length - durations.length}</b></div>
+</div>
+</div>`;
 }
-
-/* ═══════════════════════════════════════════════
-   MAP
-   ═══════════════════════════════════════════════ */
+else if (metric === 'login') {
+const lg = ev.filter(e=>e.eventType==='LOGIN');
+const pass = lg.filter(e=>e.outcome==='FACE_SUCCESS');
+const pin  = lg.filter(e=>e.outcome==='PIN_FALLBACK');
+const fail = lg.filter(e=>e.outcome==='FACE_FAIL'||e.outcome==='FACE_REJECTED');
+const attempts = pass.map(e=>(e.failedAttemptCount||0)+1);
+const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
+const first = attempts.filter(a=>a===1).length;
+const second = attempts.filter(a=>a===2).length;
+const third = attempts.filter(a=>a>=3).length;
+const byAgent = {};
+lg.forEach(e=>{ if(!byAgent[e.individualId]) byAgent[e.individualId]={t:0,p:0}; byAgent[e.individualId].t++; if(e.outcome==='FACE_SUCCESS') byAgent[e.individualId].p++; });
+const worstAgents = Object.entries(byAgent).filter(([,s])=>s.t>1).sort((a,b)=>pct(a[1].p,a[1].t)-pct(b[1].p,b[1].t)).slice(0,3);
+body.className = 'l2-inner';
+body.innerHTML = `
+<div class="l2-card">
+<div class="l2-card-title">Outcome split</div>
+${l2Bar('Face pass',pass.length,lg.length,'#0F6E56')}
+${l2Bar('PIN fallback',pin.length,lg.length,'#5B3A8C')}
+${l2Bar('Failed',fail.length,lg.length,'#A32D2D')}
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Attempts before success</div>
+<div class="l2-big" style="color:#0F6E56">${avgAttempts}</div>
+<div class="l2-sub">avg attempts</div>
+<div style="margin-top:8px">
+${l2Bar('1st attempt',first,pass.length,'#0F6E56')}
+${l2Bar('2nd attempt',second,pass.length,'#854F0B')}
+${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
+</div>
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Lowest login pass rate</div>
+${worstAgents.map(([id,s])=>l2Bar(shortId(id),pct(s.p,s.t),100,pct(s.p,s.t)>=75?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
+<div class="l2-sub" style="margin-top:6px">agents with >1 login</div>
+</div>`;
+}
+else if (metric === 'conf') {
+const face = ev.filter(e=>e.confidence>0);
+const buckets = [
+{label:'≥ 85%', min:0.85, max:1.01, color:'#0F6E56'},
+{label:'75–84%',min:0.70, max:0.85,  color:'#854F0B'},
+{label:'50–74%',min:0.50, max:0.70,  color:'#C2400C'},
+{label:'< 50%', min:0,    max:0.50,  color:'#A32D2D'},
+];
+const counts = buckets.map(b=>({...b, count: face.filter(e=>e.confidence>=b.min && e.confidence<b.max).length}));
+const below = face.filter(e=>e.confidence<0.70);
+const byAgent = {};
+face.forEach(e=>{
+if(!byAgent[e.individualId]) byAgent[e.individualId]=[];
+byAgent[e.individualId].push(e.confidence);
+});
+const agentAvgs = Object.entries(byAgent).map(([id,cs])=>({id,avg:cs.reduce((a,b)=>a+b,0)/cs.length})).sort((a,b)=>a.avg-b.avg).slice(0,4);
+body.className = 'l2-inner cols2';
+body.innerHTML = `
+<div class="l2-card">
+<div class="l2-card-title">Score distribution</div>
+${counts.map(b=>l2Bar(b.label,b.count,face.length,b.color)).join('')}
+<div class="l2-sub" style="margin-top:6px">${face.length} face scans total</div>
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Lowest avg confidence agents</div>
+${agentAvgs.map(a=>l2Bar(shortId(a.id),Math.round(a.avg*100),100,a.avg>=0.70?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
+<div class="l2-sub" style="margin-top:6px">${below.length} scans below 0.75 threshold</div>
+</div>`;
+}
+else if (metric === 'miss') {
+const rv = ev.filter(e=>e.eventType==='RE_VERIFY');
+const miss = rv.filter(e=>e.outcome==='MISSED');
+const byAgent = {};
+miss.forEach(e=>{ byAgent[e.individualId]=(byAgent[e.individualId]||0)+1; });
+const topMiss = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]).slice(0,4);
+const hours = {};
+miss.forEach(e=>{
+if(e.timestamp){ const h = parseInt(e.timestamp.slice(11,13)); hours[h]=(hours[h]||0)+1; }
+});
+const topHours = Object.entries(hours).sort((a,b)=>b[1]-a[1]).slice(0,4);
+body.className = 'l2-inner cols2';
+body.innerHTML = `
+<div class="l2-card">
+<div class="l2-card-title">Agents with most misses</div>
+${topMiss.map(([id,n])=>l2Bar(shortId(id),n,miss.length,'#A32D2D')).join('')||'<div class="empty">No misses</div>'}
+<div class="l2-sub" style="margin-top:6px">${miss.length} total timeouts</div>
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Misses by hour of day</div>
+${topHours.map(([h,n])=>l2Bar(h+':00',n,miss.length,'#854F0B')).join('')||'<div class="empty">—</div>'}
+<div class="l2-sub" style="margin-top:6px">Top 4 hours with most misses</div>
+</div>`;
+}
+else if (metric === 'pin') {
+const pins = ev.filter(e=>e.outcome==='PIN_FALLBACK');
+const loginPins = pins.filter(e=>e.eventType==='LOGIN');
+const rvPins    = pins.filter(e=>e.eventType==='RE_VERIFY');
+const byAgent = {};
+pins.forEach(e=>{ byAgent[e.individualId]=(byAgent[e.individualId]||0)+1; });
+const topPin = Object.entries(byAgent).sort((a,b)=>b[1]-a[1]).slice(0,4);
+body.className = 'l2-inner cols2';
+body.innerHTML = `
+<div class="l2-card">
+<div class="l2-card-title">PIN by event type</div>
+${l2Bar('Login PIN',loginPins.length,pins.length,'#5B3A8C')}
+${l2Bar('RE_VERIFY PIN',rvPins.length,pins.length,'#5B3A8C')}
+<div class="l2-sub" style="margin-top:6px">${pins.length} total PIN fallbacks</div>
+</div>
+<div class="l2-card">
+<div class="l2-card-title">Agents using PIN most</div>
+${topPin.map(([id,n])=>l2Bar(shortId(id),n,pins.length,'#5B3A8C')).join('')||'<div class="empty">No PIN events</div>'}
+</div>`;
+}
+}
 function initMap(){
-  // Centre on real event cluster (Abuja/FCT area)
-  map = L.map('map',{zoomControl:true}).setView([9.08, 7.46], 11);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
-    attribution:'© OpenStreetMap © Carto', maxZoom:18
-  }).addTo(map);
-
-  choroLayer = L.geoJSON(GEOJSON,{
-    style: f => lgaStyle(f),
-    onEachFeature: (f,l) => {
-      l.on('click', ()=> selectLGA(f,l));
-      l.bindTooltip(f.properties.name+' LGA',{sticky:true,className:'leaflet-tooltip'});
-    }
-  }).addTo(map);
-
-  dotLayer = L.layerGroup().addTo(map);
+map = L.map('map',{zoomControl:true}).setView([9.08, 7.46], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+attribution:'© OpenStreetMap © Carto', maxZoom:18
+}).addTo(map);
+choroLayer = L.geoJSON(GEOJSON,{
+style: f => lgaStyle(f),
+onEachFeature: (f,l) => {
+l.on('click', ()=> selectLGA(f,l));
+l.bindTooltip(f.properties.name+' LGA',{sticky:true,className:'leaflet-tooltip'});
 }
-
+}).addTo(map);
+dotLayer = L.layerGroup().addTo(map);
+}
 function lgaStyle(feature){
-  const lgName = feature.properties.name;
-  // Match by boundaryCode if available, otherwise by name via mock mapping
-  const lgEvents = filteredEvents.filter(e=>
-    (e.boundaryCode && e.boundaryCode===feature.properties.code) ||
-    (!e.boundaryCode && mockLGA(e.individualId)===lgName)
-  );
-  const a = aggregate(lgEvents);
-  let rate = 0;
-  if(mapLayer==='pass')  rate = a.rvPassRate;
-  if(mapLayer==='login') rate = a.lgPassRate;
-  if(mapLayer==='conf')  rate = Math.round(a.avgConf*100);
-  if(mapLayer==='miss')  rate = a.missRate;
-  const noData = lgEvents.length===0;
-  const fill = noData?'#e5e7eb':rate>=75?'#0F6E56':rate>=50?'#854F0B':'#A32D2D';
-  return {fillColor:fill, weight:1.5, opacity:1, color:'#fff', fillOpacity:noData?0.2:0.65};
+const lgName = feature.properties.name;
+const lgEvents = filteredEvents.filter(e=>
+(e.boundaryCode && e.boundaryCode===feature.properties.code) ||
+(!e.boundaryCode && mockLGA(e.individualId)===lgName)
+);
+const a = aggregate(lgEvents);
+let rate = 0;
+if(mapLayer==='pass')  rate = a.rvPassRate;
+if(mapLayer==='login') rate = a.lgPassRate;
+if(mapLayer==='conf')  rate = Math.round(a.avgConf*100);
+if(mapLayer==='miss')  rate = a.missRate;
+const noData = lgEvents.length===0;
+const fill = noData?'#e5e7eb':rate>=75?'#0F6E56':rate>=50?'#854F0B':'#A32D2D';
+return {fillColor:fill, weight:1.5, opacity:1, color:'#fff', fillOpacity:noData?0.2:0.65};
 }
-
-// Temporary mock LGA mapping until boundaryCode is populated
 const MOCK_LGA_MAP = {};
 function mockLGA(id){ return MOCK_LGA_MAP[id] || null; }
-
 function markerClass(outcome){
-  if(outcome==='FACE_SUCCESS')  return 'mk mk-success';
-  if(outcome==='MISSED')        return 'mk mk-miss';
-  if(outcome==='PIN_FALLBACK')  return 'mk mk-pin';
-  if(outcome==='FACE_REJECTED') return 'mk mk-reject';
-  return 'mk mk-info';
+if(outcome==='FACE_SUCCESS')  return 'mk mk-success';
+if(outcome==='MISSED')        return 'mk mk-miss';
+if(outcome==='PIN_FALLBACK')  return 'mk mk-pin';
+if(outcome==='FACE_REJECTED') return 'mk mk-reject';
+return 'mk mk-info';
 }
-
 function updateMapDots(){
-  dotLayer.clearLayers();
-  const valid = filteredEvents.filter(e=>e.lat && e.lng && Math.abs(e.lat)>0.1 && Math.abs(e.lng)>0.1);
-  // Group by location to stack nearby dots
-  valid.forEach(e=>{
-    const icon = L.divIcon({
-      className:'',
-      html:'<div class="' + markerClass(e.outcome) + '"></div>',
-      iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-10]
-    });
-    const m = L.marker([e.lat,e.lng],{icon}).addTo(dotLayer);
-    m.bindPopup(popupHTML(e), {maxWidth:220});
-    m.on('click',()=>{
-      showEventDetail(e);
-      map.panTo([e.lat, e.lng], {animate:true, duration:0.5});
-    });
-  });
-  // If events exist and no specific view, fit map to dots
-  if(valid.length && !activeAgentFilter){
-    const lats = valid.map(e=>e.lat);
-    const lngs = valid.map(e=>e.lng);
-    const bounds = [[Math.min(...lats),Math.min(...lngs)],[Math.max(...lats),Math.max(...lngs)]];
-    try { map.fitBounds(bounds, {padding:[30,30], maxZoom:14}); } catch{}
-  }
+dotLayer.clearLayers();
+const valid = filteredEvents.filter(e=>e.lat && e.lng && Math.abs(e.lat)>0.1 && Math.abs(e.lng)>0.1);
+valid.forEach(e=>{
+const icon = L.divIcon({
+className:'',
+html:'<div class="' + markerClass(e.outcome) + '"></div>',
+iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-10]
+});
+const m = L.marker([e.lat,e.lng],{icon}).addTo(dotLayer);
+m.bindPopup(popupHTML(e), {maxWidth:220});
+m.on('click',()=>{
+showEventDetail(e);
+map.panTo([e.lat, e.lng], {animate:true, duration:0.5});
+});
+});
+if(valid.length && !activeAgentFilter){
+const lats = valid.map(e=>e.lat);
+const lngs = valid.map(e=>e.lng);
+const bounds = [[Math.min(...lats),Math.min(...lngs)],[Math.max(...lats),Math.max(...lngs)]];
+try { map.fitBounds(bounds, {padding:[30,30], maxZoom:14}); } catch{}
 }
-
+}
 function updateMap(){
-  if(!map) return;
-  updateMapDots();
-  if(mapView==='events'){
-    choroLayer.setStyle(f=>({...lgaStyle(f), fillOpacity:0.15}));
-  } else {
-    choroLayer.setStyle(f=>lgaStyle(f));
-  }
+if(!map) return;
+updateMapDots();
+if(mapView==='events'){
+choroLayer.setStyle(f=>({...lgaStyle(f), fillOpacity:0.15}));
+} else {
+choroLayer.setStyle(f=>lgaStyle(f));
 }
-
+}
 function faceImgTag(faceImage, cls='face-thumb') {
-  if (faceImage) return `<img src="data:image/jpeg;base64,${faceImage}" class="${cls}" alt="Face scan">`;
-  return `<div class="${cls === 'face-thumb-lg' ? 'face-thumb-lg' : 'no-face'}" style="${cls==='face-thumb-lg'?'display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;width:88px;height:88px':''}">👤</div>`;
+if (faceImage) return `<img src="data:image/jpeg;base64,${faceImage}" class="${cls}" alt="Face scan">`;
+return `<div class="${cls === 'face-thumb-lg' ? 'face-thumb-lg' : 'no-face'}" style="${cls==='face-thumb-lg'?'display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;width:88px;height:88px':''}">👤</div>`;
 }
-
 function popupHTML(e){
-  // Use event's own faceImage first, fall back to agent's cached face
-  const face = e.faceImage || AGENT_FACE[e.individualId] || null;
-  const imgHtml = face ? '<img src="data:image/jpeg;base64,' + face + '" style="width:64px;height:64px;border-radius:6px;object-fit:cover;display:block;margin-bottom:6px;border:1px solid #ddd">' : '';
-  const confColor_ = e.confidence>=0.85?'#0F6E56':e.confidence>=0.70?'#854F0B':e.confidence>0?'#A32D2D':'#999';
-  return '<div style="font-size:12px;line-height:1.7;min-width:160px">'
-    + imgHtml
-    + '<div style="font-weight:600;margin-bottom:4px;font-size:13px">' + shortId(e.individualId) + '</div>'
-    + '<div style="display:flex;gap:6px;margin-bottom:4px">'
-    +   '<span style="background:' + outcomeColor(e.outcome) + '20;color:' + outcomeColor(e.outcome) + ';padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600">' + e.outcome + '</span>'
-    +   '<span style="color:#999;font-size:10px">' + e.eventType + '</span>'
-    + '</div>'
-    + '<div style="font-size:11px;color:#555;line-height:1.8">'
-    +   '<div><b>Confidence:</b> <span style="color:' + confColor_ + '">' + (e.confidence?(e.confidence*100).toFixed(1)+'%':'—') + '</span></div>'
-    +   '<div><b>Time:</b> ' + (e.timestamp||'—') + '</div>'
-    +   '<div><b>GPS accuracy:</b> ' + (e.locationAccuracy?e.locationAccuracy.toFixed(0)+'m':'—') + '</div>'
-    +   (e.responseTime ? '<div><b>Response:</b> ' + (parseResponseSecs(e.responseTime)||'—') + 's</div>' : '')
-    + '</div>'
-    + '</div>';
+// Use event's own faceImage first, fall back to agent's cached face
+const face = e.faceImage || AGENT_FACE[e.individualId] || null;
+const imgHtml = face ? '<img src="data:image/jpeg;base64,' + face + '" style="width:64px;height:64px;border-radius:6px;object-fit:cover;display:block;margin-bottom:6px;border:1px solid #ddd">' : '';
+const confColor_ = e.confidence>=0.85?'#0F6E56':e.confidence>=0.70?'#854F0B':e.confidence>0?'#A32D2D':'#999';
+return '<div style="font-size:12px;line-height:1.7;min-width:160px">'
++ imgHtml
++ '<div style="font-weight:600;margin-bottom:4px;font-size:13px">' + shortId(e.individualId) + '</div>'
++ '<div style="display:flex;gap:6px;margin-bottom:4px">'
++   '<span style="background:' + outcomeColor(e.outcome) + '20;color:' + outcomeColor(e.outcome) + ';padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600">' + e.outcome + '</span>'
++   '<span style="color:#999;font-size:10px">' + e.eventType + '</span>'
++ '</div>'
++ '<div style="font-size:11px;color:#555;line-height:1.8">'
++   '<div><b>Confidence:</b> <span style="color:' + confColor_ + '">' + (e.confidence?(e.confidence*100).toFixed(1)+'%':'—') + '</span></div>'
++   '<div><b>Time:</b> ' + (e.timestamp||'—') + '</div>'
++   '<div><b>GPS accuracy:</b> ' + (e.locationAccuracy?e.locationAccuracy.toFixed(0)+'m':'—') + '</div>'
++   (e.responseTime ? '<div><b>Response:</b> ' + (parseResponseSecs(e.responseTime)||'—') + 's</div>' : '')
++ '</div>'
++ '</div>';
 }
-
 function setMapView(v, btn){
-  mapView = v;
-  document.querySelectorAll('.mlt-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  updateMap();
-  updateLegend();
+mapView = v;
+document.querySelectorAll('.mlt-btn').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+updateMap();
+updateLegend();
 }
-
 function setMapLayer(l, el){
-  mapLayer = l;
-  document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active'));
-  if(el) el.classList.add('active');
-  updateMap();
-  updateLegend();
+mapLayer = l;
+document.querySelectorAll('.mc').forEach(c=>c.classList.remove('active'));
+if(el) el.classList.add('active');
+updateMap();
+updateLegend();
 }
-
 function updateLegend(){
-  const t = {pass:'RE_VERIFY pass rate',login:'Login pass rate',conf:'Avg confidence',miss:'Missed rate'};
-  document.getElementById('legend-title').textContent = mapView==='events'?'Event outcome':t[mapLayer];
-  if(mapView!=='events'){
-    document.getElementById('legend-body').innerHTML=`
-      <div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>≥ 75%</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>50–74%</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>< 50%</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#e5e7eb"></div>No data</div>`;
-  } else {
-    document.getElementById('legend-body').innerHTML=`
-      <div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>Face success</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>Missed / timeout</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#5B3A8C"></div>PIN fallback</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#C2400C"></div>Face rejected</div>
-      <div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>`;
-  }
+const t = {pass:'RE_VERIFY pass rate',login:'Login pass rate',conf:'Avg confidence',miss:'Missed rate'};
+document.getElementById('legend-title').textContent = mapView==='events'?'Event outcome':t[mapLayer];
+if(mapView!=='events'){
+document.getElementById('legend-body').innerHTML=`
+<div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>≥ 75%</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#854F0B"></div>50–74%</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>< 50%</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#e5e7eb"></div>No data</div>`;
+} else {
+document.getElementById('legend-body').innerHTML=`
+<div class="legend-row"><div class="legend-swatch" style="background:#0F6E56"></div>Face success</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#A32D2D"></div>Missed / timeout</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#5B3A8C"></div>PIN fallback</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#C2400C"></div>Face rejected</div>
+<div class="legend-row"><div class="legend-swatch" style="background:#185FA5"></div>Login / other</div>`;
 }
-
-/* ═══════════════════════════════════════════════
-   RIGHT PANEL
-   ═══════════════════════════════════════════════ */
+}
 function renderRightPanel(){
-  if(selectedItem) return;
-  const a = aggregate(filteredEvents);
-  const oc = {};
-  filteredEvents.forEach(e=>{ oc[e.outcome]=(oc[e.outcome]||0)+1; });
-  const outBars = Object.entries(oc).map(([k,v])=>barHTML(k,v,a.total,outcomeColor(k))).join('');
-
-  document.getElementById('rp-body').innerHTML = `
-    <div class="stat-grid">
-      <div class="stat-card"><div class="sl">Total events</div><div class="sv">${a.total}</div></div>
-      <div class="stat-card"><div class="sl">Unique agents</div><div class="sv">${a.agents}</div></div>
-      <div class="stat-card"><div class="sl">RE_VERIFY pass</div>
-        <div class="sv" style="color:${a.rvPassRate>=75?'var(--green)':'var(--red)'}">${a.reverify?a.rvPassRate+'%':'—'}</div></div>
-      <div class="stat-card"><div class="sl">Avg confidence</div>
-        <div class="sv" style="color:${confColor(a.avgConf)}">${a.avgConf?(a.avgConf*100).toFixed(0)+'%':'—'}</div></div>
-    </div>
-    <div class="divider"></div>
-    <div class="bar-section"><div class="bs-title">Outcome breakdown</div>
-      ${outBars||'<div class="empty">No events</div>'}</div>
-    <div class="divider"></div>
-    <div style="font-size:10px;color:var(--text3)">Click an LGA polygon or event dot for drill-down.</div>`;
+if(selectedItem) return;
+const a = aggregate(filteredEvents);
+const oc = {};
+filteredEvents.forEach(e=>{ oc[e.outcome]=(oc[e.outcome]||0)+1; });
+const outBars = Object.entries(oc).map(([k,v])=>barHTML(k,v,a.total,outcomeColor(k))).join('');
+document.getElementById('rp-body').innerHTML = `
+<div class="stat-grid">
+<div class="stat-card"><div class="sl">Total events</div><div class="sv">${a.total}</div></div>
+<div class="stat-card"><div class="sl">Unique agents</div><div class="sv">${a.agents}</div></div>
+<div class="stat-card"><div class="sl">RE_VERIFY pass</div>
+<div class="sv" style="color:${a.rvPassRate>=75?'var(--green)':'var(--red)'}">${a.reverify?a.rvPassRate+'%':'—'}</div></div>
+<div class="stat-card"><div class="sl">Avg confidence</div>
+<div class="sv" style="color:${confColor(a.avgConf)}">${a.avgConf?(a.avgConf*100).toFixed(0)+'%':'—'}</div></div>
+</div>
+<div class="divider"></div>
+<div class="bar-section"><div class="bs-title">Outcome breakdown</div>
+${outBars||'<div class="empty">No events</div>'}</div>
+<div class="divider"></div>
+<div style="font-size:10px;color:var(--text3)">Click an LGA polygon or event dot for drill-down.</div>`;
 }
-
 function selectLGA(feature, layer){
-  selectedItem = feature;
-  document.getElementById('rp-title').textContent = feature.properties.name+' LGA';
-  document.getElementById('rp-back').style.display='';
-  const lgName = feature.properties.name;
-  const lgEvents = filteredEvents.filter(e=>
-    (e.boundaryCode && e.boundaryCode===feature.properties.code) ||
-    (!e.boundaryCode && mockLGA(e.individualId)===lgName)
-  );
-  const a = aggregate(lgEvents);
-  const as = agentStats(lgEvents);
-  const agentRows = Object.entries(as).map(([id,s])=>{
-    const avgC = s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
-    return `<tr><td>${shortId(id)}</td><td>${s.total}</td>
-      <td><span class="pill pill-pass">${s.pass}</span></td>
-      <td>${avgC?(avgC*100).toFixed(0)+'%':'—'}</td></tr>`;
-  }).join('')||'<tr><td colspan="4" class="empty">No agents mapped to this LGA yet</td></tr>';
-
-  document.getElementById('rp-body').innerHTML=`
-    <div class="stat-grid">
-      <div class="stat-card"><div class="sl">Events</div><div class="sv">${lgEvents.length}</div></div>
-      <div class="stat-card"><div class="sl">Agents</div><div class="sv">${a.agents}</div></div>
-      <div class="stat-card"><div class="sl">Verif. pass</div>
-        <div class="sv" style="color:${a.rvPassRate>=75?'var(--green)':'var(--red)'}">${a.reverify?a.rvPassRate+'%':'—'}</div></div>
-      <div class="stat-card"><div class="sl">Missed</div><div class="sv">${a.missed}</div></div>
-    </div>
-    <div class="divider"></div>
-    <div class="bs-title" style="margin-bottom:5px">Ward: ${feature.properties.ward}</div>
-    <div class="divider"></div>
-    <div class="bs-title" style="margin-bottom:6px">Agents in LGA</div>
-    <table class="agt-table">
-      <thead><tr><th>Agent</th><th>Events</th><th>Pass</th><th>Avg conf</th></tr></thead>
-      <tbody>${agentRows}</tbody>
-    </table>
-    <div style="font-size:10px;color:var(--text3);margin-top:8px">Agent↔LGA mapping activates once boundaryCode is populated in events.</div>`;
-
-  choroLayer.eachLayer(l=>{ if(l.feature===feature) l.setStyle({weight:3,color:'#185FA5'}); });
+selectedItem = feature;
+document.getElementById('rp-title').textContent = feature.properties.name+' LGA';
+document.getElementById('rp-back').style.display='';
+const lgName = feature.properties.name;
+const lgEvents = filteredEvents.filter(e=>
+(e.boundaryCode && e.boundaryCode===feature.properties.code) ||
+(!e.boundaryCode && mockLGA(e.individualId)===lgName)
+);
+const a = aggregate(lgEvents);
+const as = agentStats(lgEvents);
+const agentRows = Object.entries(as).map(([id,s])=>{
+const avgC = s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
+return `<tr><td>${shortId(id)}</td><td>${s.total}</td>
+<td><span class="pill pill-pass">${s.pass}</span></td>
+<td>${avgC?(avgC*100).toFixed(0)+'%':'—'}</td></tr>`;
+}).join('')||'<tr><td colspan="4" class="empty">No agents mapped to this LGA yet</td></tr>';
+document.getElementById('rp-body').innerHTML=`
+<div class="stat-grid">
+<div class="stat-card"><div class="sl">Events</div><div class="sv">${lgEvents.length}</div></div>
+<div class="stat-card"><div class="sl">Agents</div><div class="sv">${a.agents}</div></div>
+<div class="stat-card"><div class="sl">Verif. pass</div>
+<div class="sv" style="color:${a.rvPassRate>=75?'var(--green)':'var(--red)'}">${a.reverify?a.rvPassRate+'%':'—'}</div></div>
+<div class="stat-card"><div class="sl">Missed</div><div class="sv">${a.missed}</div></div>
+</div>
+<div class="divider"></div>
+<div class="bs-title" style="margin-bottom:5px">Ward: ${feature.properties.ward}</div>
+<div class="divider"></div>
+<div class="bs-title" style="margin-bottom:6px">Agents in LGA</div>
+<table class="agt-table">
+<thead><tr><th>Agent</th><th>Events</th><th>Pass</th><th>Avg conf</th></tr></thead>
+<tbody>${agentRows}</tbody>
+</table>
+<div style="font-size:10px;color:var(--text3);margin-top:8px">Agent↔LGA mapping activates once boundaryCode is populated in events.</div>`;
+choroLayer.eachLayer(l=>{ if(l.feature===feature) l.setStyle({weight:3,color:'#185FA5'}); });
 }
-
 function showEventDetail(e){
-  selectedItem = e;
-  document.getElementById('rp-title').textContent = shortId(e.individualId);
-  document.getElementById('rp-back').style.display='';
-  document.getElementById('rp-body').innerHTML=`
-    <div id="rp-face-slot" data-cls="face-thumb-lg" style="margin-bottom:8px"></div>
-    <div class="stat-grid">
-      <div class="stat-card" style="grid-column:1/-1"><div class="sl">Individual ID</div>
-        <div style="font-size:10px;word-break:break-all;margin-top:2px;font-weight:500">${e.individualId||'—'}</div></div>
-      <div class="stat-card"><div class="sl">Event type</div><div class="sv" style="font-size:13px">${e.eventType||'—'}</div></div>
-      <div class="stat-card"><div class="sl">Response type</div><div class="sv" style="font-size:13px">${e.responseType||'—'}</div></div>
-      <div class="stat-card"><div class="sl">Outcome</div>
-        <div class="sv" style="font-size:13px;color:${outcomeColor(e.outcome)}">${e.outcome||'—'}</div></div>
-      <div class="stat-card"><div class="sl">Confidence</div>
-        <div class="sv" style="color:${confColor(e.confidence)}">${e.confidence?(e.confidence*100).toFixed(1)+'%':'—'}</div></div>
-      <div class="stat-card"><div class="sl">Failed attempts</div><div class="sv">${e.failedAttemptCount}</div></div>
-      <div class="stat-card"><div class="sl">GPS accuracy</div><div class="sv">${e.locationAccuracy?e.locationAccuracy.toFixed(0)+'m':'—'}</div></div>
-    </div>
-    <div class="divider"></div>
-    <div class="bs-title" style="margin-bottom:5px">Timing</div>
-    <div style="font-size:11px;color:var(--text2);line-height:1.9">
-      <div><b>Timestamp:</b> ${e.timestamp||'—'}</div>
-      <div><b>Popup shown:</b> ${e.popupTime||'—'}</div>
-      <div><b>Response time:</b> ${e.responseTime||'—'}</div>
-    </div>
-    <div class="divider"></div>
-    <div class="bs-title" style="margin-bottom:5px">Location</div>
-    <div style="font-size:11px;color:var(--text2);line-height:1.9">
-      <div><b>Lat/Lng:</b> ${e.lat?e.lat.toFixed(5):0}, ${e.lng?e.lng.toFixed(5):0}</div>
-      <div><b>Boundary code:</b> ${e.boundaryCode||'Not yet populated'}</div>
-      <div><b>Anomaly flags:</b> ${e.anomalyFlags||'None'}</div>
-      <div><b>Device ID:</b> ${e.deviceId||'—'}</div>
-    </div>`;
-
-  setTimeout(()=>setFaceImg('rp-face-slot', e.faceImage||AGENT_FACE[e.individualId]||null), 0);}
-
+selectedItem = e;
+document.getElementById('rp-title').textContent = shortId(e.individualId);
+document.getElementById('rp-back').style.display='';
+document.getElementById('rp-body').innerHTML=`
+<div id="rp-face-slot" data-cls="face-thumb-lg" style="margin-bottom:8px"></div>
+<div class="stat-grid">
+<div class="stat-card" style="grid-column:1/-1"><div class="sl">Individual ID</div>
+<div style="font-size:10px;word-break:break-all;margin-top:2px;font-weight:500">${e.individualId||'—'}</div></div>
+<div class="stat-card"><div class="sl">Event type</div><div class="sv" style="font-size:13px">${e.eventType||'—'}</div></div>
+<div class="stat-card"><div class="sl">Response type</div><div class="sv" style="font-size:13px">${e.responseType||'—'}</div></div>
+<div class="stat-card"><div class="sl">Outcome</div>
+<div class="sv" style="font-size:13px;color:${outcomeColor(e.outcome)}">${e.outcome||'—'}</div></div>
+<div class="stat-card"><div class="sl">Confidence</div>
+<div class="sv" style="color:${confColor(e.confidence)}">${e.confidence?(e.confidence*100).toFixed(1)+'%':'—'}</div></div>
+<div class="stat-card"><div class="sl">Failed attempts</div><div class="sv">${e.failedAttemptCount}</div></div>
+<div class="stat-card"><div class="sl">GPS accuracy</div><div class="sv">${e.locationAccuracy?e.locationAccuracy.toFixed(0)+'m':'—'}</div></div>
+</div>
+<div class="divider"></div>
+<div class="bs-title" style="margin-bottom:5px">Timing</div>
+<div style="font-size:11px;color:var(--text2);line-height:1.9">
+<div><b>Timestamp:</b> ${e.timestamp||'—'}</div>
+<div><b>Popup shown:</b> ${e.popupTime||'—'}</div>
+<div><b>Response time:</b> ${e.responseTime||'—'}</div>
+</div>
+<div class="divider"></div>
+<div class="bs-title" style="margin-bottom:5px">Location</div>
+<div style="font-size:11px;color:var(--text2);line-height:1.9">
+<div><b>Lat/Lng:</b> ${e.lat?e.lat.toFixed(5):0}, ${e.lng?e.lng.toFixed(5):0}</div>
+<div><b>Boundary code:</b> ${e.boundaryCode||'Not yet populated'}</div>
+<div><b>Anomaly flags:</b> ${e.anomalyFlags||'None'}</div>
+<div><b>Device ID:</b> ${e.deviceId||'—'}</div>
+</div>`;
+setTimeout(()=>setFaceImg('rp-face-slot', e.faceImage||AGENT_FACE[e.individualId]||null), 0);}
 function clearSelection(){
-  selectedItem=null;
-  document.getElementById('rp-title').textContent='Overview';
-  document.getElementById('rp-back').style.display='none';
-  choroLayer.eachLayer(l=>choroLayer.resetStyle(l));
-  renderRightPanel();
+selectedItem=null;
+document.getElementById('rp-title').textContent='Overview';
+document.getElementById('rp-back').style.display='none';
+choroLayer.eachLayer(l=>choroLayer.resetStyle(l));
+renderRightPanel();
 }
-
-/* ═══════════════════════════════════════════════
-   EVENT FEED
-   ═══════════════════════════════════════════════ */
 function setFeedView(view, btn) {
-  feedView = view;
-  document.querySelectorAll('.feed-toggle').forEach(b => b.classList.remove('active-toggle'));
-  btn.classList.add('active-toggle');
-  renderFeed();
+feedView = view;
+document.querySelectorAll('.feed-toggle').forEach(b => b.classList.remove('active-toggle'));
+btn.classList.add('active-toggle');
+renderFeed();
 }
-
 function renderFeed(){
-  // Deduplicate by event id
-  const seen = new Set();
-  let unique = [...filteredEvents]
-    .filter(e => { if(!e.id || seen.has(e.id)){ return !e.id; } seen.add(e.id); return true; })
-    .sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
-
-  // Apply feed view filter
-  if (feedView === 'latest') {
-    // Keep only the most recent event per agent (already sorted desc so first wins)
-    const agentSeen = new Set();
-    unique = unique.filter(e => {
-      if (agentSeen.has(e.individualId)) return false;
-      agentSeen.add(e.individualId);
-      return true;
-    });
-  } else if (feedView === 'fails') {
-    unique = unique.filter(e => e.outcome === 'MISSED' || e.outcome === 'FACE_REJECTED' || e.outcome === 'PIN_FALLBACK');
-  }
-
-  // Update count label
-  const countEl = document.getElementById('feed-count');
-  if (countEl) countEl.textContent = unique.length + ' events';
-
-  const body = document.getElementById('feed-body');
-  if(!unique.length){ body.innerHTML='<div class="empty">No events match current filters.</div>'; return; }
-
-  body.innerHTML = unique.map(e=>{
-    const bc  = e.outcome==='FACE_SUCCESS'?'badge-success':e.outcome==='MISSED'?'badge-missed':'badge-warn';
-    const conf = e.confidence
-      ? `<span class="conf-bar"><span class="conf-fill" style="width:${e.confidence*100}%;background:${confColor(e.confidence)}"></span></span> ${(e.confidence*100).toFixed(0)}%`
-      : '—';
-    // Safe click — store id, look up full event on click
-    const safeId = (e.id||'').replace(/'/g,"\'");
-    // Face avatar via DOM slot (avoids base64 in template literal)
-    const faceSlot = AGENT_FACE[e.individualId]
-      ? `<span id="fi-${e.id}" style="display:inline-block;width:22px;height:22px;border-radius:50%;overflow:hidden;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px;flex-shrink:0"></span>`
-      : '';
-    return `<div class="feed-item" onclick="openFeedById('${safeId}')">
-      <div class="fi-top" style="display:flex;align-items:center;gap:5px">
-        ${faceSlot}
-        <span class="fi-badge ${bc}">${e.outcome}</span>
-        <span style="font-size:10px;color:var(--text2)">${e.eventType}</span>
-        <span class="fi-time">${timeStr(e.timestamp)}</span>
-      </div>
-      <div class="fi-detail">${shortId(e.individualId)} · conf: ${conf}</div>
-    </div>`;
-  }).join('');
+const seen = new Set();
+let unique = [...filteredEvents]
+.filter(e => { if(!e.id || seen.has(e.id)){ return !e.id; } seen.add(e.id); return true; })
+.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+if (feedView === 'latest') {
+const agentSeen = new Set();
+unique = unique.filter(e => {
+if (agentSeen.has(e.individualId)) return false;
+agentSeen.add(e.individualId);
+return true;
+});
+} else if (feedView === 'fails') {
+unique = unique.filter(e => e.outcome === 'MISSED' || e.outcome === 'FACE_REJECTED' || e.outcome === 'PIN_FALLBACK');
+}
+const countEl = document.getElementById('feed-count');
+if (countEl) countEl.textContent = unique.length + ' events';
+const body = document.getElementById('feed-body');
+if(!unique.length){ body.innerHTML='<div class="empty">No events match current filters.</div>'; return; }
+body.innerHTML = unique.map(e=>{
+const bc  = e.outcome==='FACE_SUCCESS'?'badge-success':e.outcome==='MISSED'?'badge-missed':'badge-warn';
+const conf = e.confidence
+? `<span class="conf-bar"><span class="conf-fill" style="width:${e.confidence*100}%;background:${confColor(e.confidence)}"></span></span> ${(e.confidence*100).toFixed(0)}%`
+: '—';
+const safeId = (e.id||'').replace(/'/g,"\'");
+const faceSlot = AGENT_FACE[e.individualId]
+? `<span id="fi-${e.id}" style="display:inline-block;width:22px;height:22px;border-radius:50%;overflow:hidden;border:1.5px solid var(--border2);vertical-align:middle;margin-right:4px;flex-shrink:0"></span>`
+: '';
+return `<div class="feed-item" onclick="openFeedById('${safeId}')">
+<div class="fi-top" style="display:flex;align-items:center;gap:5px">
+${faceSlot}
+<span class="fi-badge ${bc}">${e.outcome}</span>
+<span style="font-size:10px;color:var(--text2)">${e.eventType}</span>
+<span class="fi-time">${timeStr(e.timestamp)}</span>
+</div>
+<div class="fi-detail">${shortId(e.individualId)} · conf: ${conf}</div>
+</div>`;
+}).join('');
 }
 function openFeedById(id) {
-  const e = filteredEvents.find(ev => ev.id === id);
-  if (e) { showEventDetail(e); switchTabDirect('map'); }
+const e = filteredEvents.find(ev => ev.id === id);
+if (e) { showEventDetail(e); switchTabDirect('map'); }
 }
-
 function fillFeedAvatars() {
-  filteredEvents.forEach(e => {
-    const b64 = AGENT_FACE[e.individualId];
-    if (!b64) return;
-    const slot = document.getElementById('fi-' + e.id);
-    if (!slot || slot.children.length) return;
-    const img = document.createElement('img');
-    img.src = 'data:image/jpeg;base64,' + b64;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
-    slot.appendChild(img);
-  });
+filteredEvents.forEach(e => {
+const b64 = AGENT_FACE[e.individualId];
+if (!b64) return;
+const slot = document.getElementById('fi-' + e.id);
+if (!slot || slot.children.length) return;
+const img = document.createElement('img');
+img.src = 'data:image/jpeg;base64,' + b64;
+img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+slot.appendChild(img);
+});
 }
-
 function openFeedEvent(encoded){
-  const e=JSON.parse(decodeURIComponent(encoded));
-  showEventDetail(e);
-  switchTabDirect('map');
+const e=JSON.parse(decodeURIComponent(encoded));
+showEventDetail(e);
+switchTabDirect('map');
 }
-
-/* ═══════════════════════════════════════════════
-   ANALYTICS
-   ═══════════════════════════════════════════════ */
 function toggleDimDetail(id) {
-  const el = document.getElementById('dim-'+id);
-  if(el) el.classList.toggle('open');
+const el = document.getElementById('dim-'+id);
+if(el) el.classList.toggle('open');
 }
-
 function renderAnalytics(){
-  const ev = filteredEvents;
-  const a  = aggregate(ev);
-  const as = agentStats(ev);
-
-  // ── Scoring ──
-  const rvScore    = Math.min(100, a.rvPassRate);   // weight 30%
-  const lgScore    = Math.min(100, a.lgPassRate);   // weight 15%
-  const missScore  = Math.max(0, 100 - a.missRate); // weight 20%
-  const confScore  = Math.min(100, Math.round(a.avgConf*100)); // weight 15%
-  const enrollRate = a.agents>0 ? pct(Object.values(as).filter(s=>s.total>0).length, a.agents) : 0;
-  const enrollScore = Math.min(100, enrollRate);     // weight 20%
-
-  const totalScore = Math.round(
-    rvScore*0.30 + lgScore*0.15 + missScore*0.20 + confScore*0.15 + enrollScore*0.20
-  );
-  const scoreColor = totalScore>=75?'#0F6E56':totalScore>=50?'#854F0B':'#A32D2D';
-
-  // Score ring
-  const ring = document.getElementById('a-score-ring');
-  ring.textContent = totalScore;
-  ring.style.borderColor = scoreColor;
-  ring.style.color = scoreColor;
-  const label = document.getElementById('a-score-label');
-  label.textContent = totalScore>=75?'System performing well — ready to assess scale decisions.'
-    :totalScore>=50?'System partially effective — key issues need resolution before scale.'
-    :'System underperforming — significant fixes required before wider deployment.';
-  label.style.color = scoreColor;
-
-  const flags = [];
-  if(a.rvPassRate<50) flags.push('⚠ RE_VERIFY pass rate critically low ('+a.rvPassRate+'%)');
-  if(a.missRate>50)   flags.push('⚠ More than half of RE_VERIFY prompts are being missed');
-  if(a.pinRate>20)    flags.push('⚠ High PIN fallback rate — face recognition unreliable');
-  if(a.avgConf<0.70)  flags.push('⚠ Average confidence below 0.75 threshold');
-  document.getElementById('a-score-flags').innerHTML = flags.join('<br>');
-
-  // ── Dimensions ──
-  const dims = [
-    {id:'rv',   label:'RE_VERIFY pass rate',  score:rvScore,    w:'30%', threshold:75,
-     detail: 'Pass: '+a.rvPass+' · Miss: '+a.missed+' · PIN: '+a.pinFall+' of '+a.reverify+' RE_VERIFY events'},
-    {id:'enr',  label:'Enrollment completeness', score:enrollScore, w:'20%', threshold:90,
-     detail: Object.values(as).filter(s=>s.total>0).length+' agents enrolled out of '+a.agents+' unique agents seen'},
-    {id:'miss', label:'Miss / timeout (inverted)', score:missScore, w:'20%', threshold:60,
-     detail: a.missed+' timeouts of '+a.reverify+' RE_VERIFY events ('+a.missRate+'% miss rate)'},
-    {id:'lg',   label:'Login pass rate',      score:lgScore,    w:'15%', threshold:85,
-     detail: a.lgPass+' successful logins of '+a.login+' total login events'},
-    {id:'conf', label:'Avg confidence score', score:confScore,  w:'15%', threshold:70,
-     detail: 'Average: '+(a.avgConf?(a.avgConf*100).toFixed(1)+'%':'—')+' across all face scans (threshold ≥ 70%)'},
-  ];
-  document.getElementById('a-dimensions').innerHTML = dims.map(d=>{
-    const col = d.score>=d.threshold?'#0F6E56':d.score>=d.threshold*0.7?'#854F0B':'#A32D2D';
-    const flag = d.score<d.threshold ? ' ⚠' : '';
-    const safeId = d.id;
-    return `<div class="dim-row" onclick="toggleDimDetail('${safeId}')" style="cursor:pointer">
-      <div class="dim-score" style="color:${col}">${d.score}</div>
-      <div class="dim-label">${d.label}<span class="dim-flag">${flag}</span></div>
-      <div class="dim-bar"><div class="dim-fill" style="width:${d.score}%;background:${col}"></div></div>
-      <span style="font-size:10px;color:var(--text3);flex-shrink:0;width:28px;text-align:right">${d.w}</span>
-      <span class="expand-btn">▾</span>
-    </div>
-    <div class="dim-detail" id="dim-${safeId}" style="padding-left:44px;color:var(--text2)">${d.detail}</div>`;
-  }).join('');
-
-  // ── Section A: Reliability ──
-  const rvTrend = {};
-  ev.filter(e=>e.eventType==='RE_VERIFY'&&e.timestamp).forEach(e=>{
-    const d=e.timestamp.slice(0,10);
-    if(!rvTrend[d]) rvTrend[d]={pass:0,total:0};
-    rvTrend[d].total++;
-    if(e.outcome==='FACE_SUCCESS') rvTrend[d].pass++;
-  });
-  const trendBars = Object.entries(rvTrend).sort().map(([d,t])=>{
-    const r=pct(t.pass,t.total);
-    return barHTML(d.slice(5),r,100,r>=70?'#0F6E56':'#A32D2D',true);
-  }).join('');
-  // Avg response duration for RE_VERIFY
-  const rvWithDur = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.responseTime);
-  const durations = rvWithDur.map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
-  const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
-  const passDur = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS'&&e.responseTime)
-    .map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
-  const avgPassDur = passDur.length ? Math.round(passDur.reduce((a,b)=>a+b,0)/passDur.length) : null;
-  // Avg attempts for RE_VERIFY success
-  const rvPassEv = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS');
-  const attempts = rvPassEv.map(e=>(e.failedAttemptCount||0)+1);
-  const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
-  const first1 = attempts.filter(a=>a===1).length;
-  const second1 = attempts.filter(a=>a===2).length;
-  const third1 = attempts.filter(a=>a>=3).length;
-
-  document.getElementById('a-reliability').innerHTML =
-    '<div class="bs-title" style="margin-bottom:6px">RE_VERIFY pass by date</div>'
-    +(trendBars||'<div class="empty">No RE_VERIFY events</div>')
-    +'<div class="divider"></div>'
-    +'<div class="bs-title" style="margin-bottom:6px">Outcome split</div>'
-    +barHTML('Face pass',a.rvPass,a.reverify||1,'#0F6E56')
-    +barHTML('Missed',a.missed,a.reverify||1,'#A32D2D')
-    +barHTML('PIN fallback',a.pinFall,a.reverify||1,'#5B3A8C')
-    +'<div class="divider"></div>'
-    +'<div class="bs-title" style="margin-bottom:6px">Response duration (popup → completion)</div>'
-    +'<div style="font-size:11px;color:var(--text2);line-height:2">'
-    +'<div>Avg (all RE_VERIFY): <b>'+(avgDur!==null?avgDur+'s':'—')+'</b></div>'
-    +'<div>Avg (successful only): <b>'+(avgPassDur!==null?avgPassDur+'s':'—')+'</b></div>'
-    +'<div>No response (timeout): <b>'+(a.reverify-durations.length)+'</b></div>'
-    +'</div>'
-    +'<div class="divider"></div>'
-    +'<div class="bs-title" style="margin-bottom:6px">Attempts before success</div>'
-    +'<div style="font-size:11px;color:var(--text2);line-height:2">'
-    +'<div>Avg attempts: <b>'+avgAttempts+'</b></div>'
-    +'</div>'
-    +barHTML('1st attempt',first1,rvPassEv.length||1,'#0F6E56')
-    +barHTML('2nd attempt',second1,rvPassEv.length||1,'#854F0B')
-    +barHTML('3rd+ attempt',third1,rvPassEv.length||1,'#A32D2D');
-
-  // ── Section B: Equity ──
-  const face = ev.filter(e=>e.confidence>0);
-  const buckets = {'≥ 85%':0,'70–84%':0,'50–69%':0,'< 50%':0};
-  const bColors = {'≥ 85%':'#0F6E56','70–84%':'#854F0B','50–69%':'#C2400C','< 50%':'#A32D2D'};
-  face.forEach(e=>{
-    const c=e.confidence;
-    if(c>=0.85) buckets['≥ 85%']++;
-    else if(c>=0.70) buckets['70–84%']++;
-    else if(c>=0.5)  buckets['50–69%']++;
-    else buckets['< 50%']++;
-  });
-  const hourPass={};
-  ev.filter(e=>e.eventType==='RE_VERIFY'&&e.timestamp).forEach(e=>{
-    const h=parseInt(e.timestamp.slice(11,13));
-    if(!hourPass[h]) hourPass[h]={p:0,t:0};
-    hourPass[h].t++;
-    if(e.outcome==='FACE_SUCCESS') hourPass[h].p++;
-  });
-  const hourBars = Object.entries(hourPass).sort((a,b)=>+a[0]-+b[0]).map(([h,s])=>{
-    const r=pct(s.p,s.t);
-    return barHTML(h+':00',r,100,r>=70?'#0F6E56':'#A32D2D',true);
-  }).join('');
-  document.getElementById('a-equity').innerHTML =
-    '<div class="bs-title" style="margin-bottom:6px">Confidence distribution</div>'
-    +Object.entries(buckets).map(([k,v])=>barHTML(k,v,face.length,bColors[k])).join('')
-    +'<div class="divider"></div>'
-    +'<div class="bs-title" style="margin-bottom:6px">Pass rate by hour (lighting proxy)</div>'
-    +(hourBars||'<div class="empty">—</div>');
-
-  // ── Section C: Attendance ──
-  const allAgents = Object.keys(as);
-  const enrolledAgents  = allAgents.filter(id=>RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='ENROLLMENT'));
-  const verifiedAgents  = allAgents.filter(id=>RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS'));
-  const neverVerified   = allAgents.filter(id=>!RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='RE_VERIFY'));
-  document.getElementById('a-attendance').innerHTML =
-    barHTML('Enrolled',enrolledAgents.length,allAgents.length,'#0F6E56')
-    +barHTML('Face verified',verifiedAgents.length,allAgents.length,'#185FA5')
-    +barHTML('Never re-verified',neverVerified.length,allAgents.length,'#A32D2D')
-    +'<div class="divider"></div>'
-    +'<div style="font-size:11px;color:var(--text2)">'+allAgents.length+' unique agents in filtered data</div>';
-
-  // ── Section D: Risk flags ──
-  const risks = [];
-  // Agents with PIN dependency (>50% events are PIN)
-  Object.entries(as).forEach(([id,s])=>{
-    const agEv = ev.filter(e=>e.individualId===id);
-    const pinCount = agEv.filter(e=>e.outcome==='PIN_FALLBACK').length;
-    if(pinCount>0 && pct(pinCount,agEv.length)>50) {
-      risks.push({color:'#5B3A8C',text:'PIN-dependent: '+shortId(id)+' ('+pct(pinCount,agEv.length)+'% PIN fallback)'});
-    }
-  });
-  // Agents with >3 consecutive misses
-  Object.keys(as).forEach(id=>{
-    const agEv = ev.filter(e=>e.individualId===id&&e.eventType==='RE_VERIFY').sort((a,b)=>(a.timestamp||'').localeCompare(b.timestamp||''));
-    let streak=0, maxStreak=0;
-    agEv.forEach(e=>{ if(e.outcome==='MISSED'){streak++;maxStreak=Math.max(maxStreak,streak);}else{streak=0;} });
-    if(maxStreak>=3) risks.push({color:'#A32D2D',text:'Consecutive misses: '+shortId(id)+' ('+maxStreak+' in a row)'});
-  });
-  // Agents below confidence threshold
-  Object.entries(as).forEach(([id,s])=>{
-    const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
-    if(avg>0&&avg<0.70) risks.push({color:'#854F0B',text:'Low confidence: '+shortId(id)+' (avg '+(avg*100).toFixed(0)+'%)'});
-  });
-  document.getElementById('a-risks').innerHTML = risks.length
-    ? risks.map(r=>'<div class="risk-flag"><div class="risk-dot" style="background:'+r.color+'"></div><span>'+r.text+'</span></div>').join('')
-    : '<div class="empty" style="padding:12px">No risk flags in current data</div>';
-
-  // ── Boundary breakdown ──
-  const byBoundary={};
-  filteredEvents.filter(e=>e.boundaryCode).forEach(e=>{
-    if(!byBoundary[e.boundaryCode]) byBoundary[e.boundaryCode]=[];
-    byBoundary[e.boundaryCode].push(e);
-  });
-  if(Object.keys(byBoundary).length){
-    document.getElementById('a-boundary').innerHTML=
-      Object.entries(byBoundary).map(([code,evs])=>{
-        const ag=aggregate(evs);
-        return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:500">'+code+'</span><span style="color:var(--text3)">'+evs.length+' events</span></div>'+barHTML('Pass rate',ag.rvPassRate,100,ag.rvPassRate>=75?'#0F6E56':'#A32D2D',true)+'</div>';
-      }).join('');
-  }
+const ev = filteredEvents;
+const a  = aggregate(ev);
+const as = agentStats(ev);
+const rvScore    = Math.min(100, a.rvPassRate);
+const lgScore    = Math.min(100, a.lgPassRate);
+const missScore  = Math.max(0, 100 - a.missRate);
+const confScore  = Math.min(100, Math.round(a.avgConf*100));
+const enrollRate = a.agents>0 ? pct(Object.values(as).filter(s=>s.total>0).length, a.agents) : 0;
+const enrollScore = Math.min(100, enrollRate);
+const totalScore = Math.round(
+rvScore*0.30 + lgScore*0.15 + missScore*0.20 + confScore*0.15 + enrollScore*0.20
+);
+const scoreColor = totalScore>=75?'#0F6E56':totalScore>=50?'#854F0B':'#A32D2D';
+const ring = document.getElementById('a-score-ring');
+ring.textContent = totalScore;
+ring.style.borderColor = scoreColor;
+ring.style.color = scoreColor;
+const label = document.getElementById('a-score-label');
+label.textContent = totalScore>=75?'System performing well — ready to assess scale decisions.'
+:totalScore>=50?'System partially effective — key issues need resolution before scale.'
+:'System underperforming — significant fixes required before wider deployment.';
+label.style.color = scoreColor;
+const flags = [];
+if(a.rvPassRate<50) flags.push('⚠ RE_VERIFY pass rate critically low ('+a.rvPassRate+'%)');
+if(a.missRate>50)   flags.push('⚠ More than half of RE_VERIFY prompts are being missed');
+if(a.pinRate>20)    flags.push('⚠ High PIN fallback rate — face recognition unreliable');
+if(a.avgConf<0.70)  flags.push('⚠ Average confidence below 0.75 threshold');
+document.getElementById('a-score-flags').innerHTML = flags.join('<br>');
+const dims = [
+{id:'rv',   label:'RE_VERIFY pass rate',  score:rvScore,    w:'30%', threshold:75,
+detail: 'Pass: '+a.rvPass+' · Miss: '+a.missed+' · PIN: '+a.pinFall+' of '+a.reverify+' RE_VERIFY events'},
+{id:'enr',  label:'Enrollment completeness', score:enrollScore, w:'20%', threshold:90,
+detail: Object.values(as).filter(s=>s.total>0).length+' agents enrolled out of '+a.agents+' unique agents seen'},
+{id:'miss', label:'Miss / timeout (inverted)', score:missScore, w:'20%', threshold:60,
+detail: a.missed+' timeouts of '+a.reverify+' RE_VERIFY events ('+a.missRate+'% miss rate)'},
+{id:'lg',   label:'Login pass rate',      score:lgScore,    w:'15%', threshold:85,
+detail: a.lgPass+' successful logins of '+a.login+' total login events'},
+{id:'conf', label:'Avg confidence score', score:confScore,  w:'15%', threshold:70,
+detail: 'Average: '+(a.avgConf?(a.avgConf*100).toFixed(1)+'%':'—')+' across all face scans (threshold ≥ 70%)'},
+];
+document.getElementById('a-dimensions').innerHTML = dims.map(d=>{
+const col = d.score>=d.threshold?'#0F6E56':d.score>=d.threshold*0.7?'#854F0B':'#A32D2D';
+const flag = d.score<d.threshold ? ' ⚠' : '';
+const safeId = d.id;
+return `<div class="dim-row" onclick="toggleDimDetail('${safeId}')" style="cursor:pointer">
+<div class="dim-score" style="color:${col}">${d.score}</div>
+<div class="dim-label">${d.label}<span class="dim-flag">${flag}</span></div>
+<div class="dim-bar"><div class="dim-fill" style="width:${d.score}%;background:${col}"></div></div>
+<span style="font-size:10px;color:var(--text3);flex-shrink:0;width:28px;text-align:right">${d.w}</span>
+<span class="expand-btn">▾</span>
+</div>
+<div class="dim-detail" id="dim-${safeId}" style="padding-left:44px;color:var(--text2)">${d.detail}</div>`;
+}).join('');
+const rvTrend = {};
+ev.filter(e=>e.eventType==='RE_VERIFY'&&e.timestamp).forEach(e=>{
+const d=e.timestamp.slice(0,10);
+if(!rvTrend[d]) rvTrend[d]={pass:0,total:0};
+rvTrend[d].total++;
+if(e.outcome==='FACE_SUCCESS') rvTrend[d].pass++;
+});
+const trendBars = Object.entries(rvTrend).sort().map(([d,t])=>{
+const r=pct(t.pass,t.total);
+return barHTML(d.slice(5),r,100,r>=70?'#0F6E56':'#A32D2D',true);
+}).join('');
+const rvWithDur = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.responseTime);
+const durations = rvWithDur.map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
+const passDur = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS'&&e.responseTime)
+.map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+const avgPassDur = passDur.length ? Math.round(passDur.reduce((a,b)=>a+b,0)/passDur.length) : null;
+const rvPassEv = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS');
+const attempts = rvPassEv.map(e=>(e.failedAttemptCount||0)+1);
+const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
+const first1 = attempts.filter(a=>a===1).length;
+const second1 = attempts.filter(a=>a===2).length;
+const third1 = attempts.filter(a=>a>=3).length;
+document.getElementById('a-reliability').innerHTML =
+'<div class="bs-title" style="margin-bottom:6px">RE_VERIFY pass by date</div>'
++(trendBars||'<div class="empty">No RE_VERIFY events</div>')
++'<div class="divider"></div>'
++'<div class="bs-title" style="margin-bottom:6px">Outcome split</div>'
++barHTML('Face pass',a.rvPass,a.reverify||1,'#0F6E56')
++barHTML('Missed',a.missed,a.reverify||1,'#A32D2D')
++barHTML('PIN fallback',a.pinFall,a.reverify||1,'#5B3A8C')
++'<div class="divider"></div>'
++'<div class="bs-title" style="margin-bottom:6px">Response duration (popup → completion)</div>'
++'<div style="font-size:11px;color:var(--text2);line-height:2">'
++'<div>Avg (all RE_VERIFY): <b>'+(avgDur!==null?avgDur+'s':'—')+'</b></div>'
++'<div>Avg (successful only): <b>'+(avgPassDur!==null?avgPassDur+'s':'—')+'</b></div>'
++'<div>No response (timeout): <b>'+(a.reverify-durations.length)+'</b></div>'
++'</div>'
++'<div class="divider"></div>'
++'<div class="bs-title" style="margin-bottom:6px">Attempts before success</div>'
++'<div style="font-size:11px;color:var(--text2);line-height:2">'
++'<div>Avg attempts: <b>'+avgAttempts+'</b></div>'
++'</div>'
++barHTML('1st attempt',first1,rvPassEv.length||1,'#0F6E56')
++barHTML('2nd attempt',second1,rvPassEv.length||1,'#854F0B')
++barHTML('3rd+ attempt',third1,rvPassEv.length||1,'#A32D2D');
+const face = ev.filter(e=>e.confidence>0);
+const buckets = {'≥ 85%':0,'70–84%':0,'50–69%':0,'< 50%':0};
+const bColors = {'≥ 85%':'#0F6E56','70–84%':'#854F0B','50–69%':'#C2400C','< 50%':'#A32D2D'};
+face.forEach(e=>{
+const c=e.confidence;
+if(c>=0.85) buckets['≥ 85%']++;
+else if(c>=0.70) buckets['70–84%']++;
+else if(c>=0.5)  buckets['50–69%']++;
+else buckets['< 50%']++;
+});
+const hourPass={};
+ev.filter(e=>e.eventType==='RE_VERIFY'&&e.timestamp).forEach(e=>{
+const h=parseInt(e.timestamp.slice(11,13));
+if(!hourPass[h]) hourPass[h]={p:0,t:0};
+hourPass[h].t++;
+if(e.outcome==='FACE_SUCCESS') hourPass[h].p++;
+});
+const hourBars = Object.entries(hourPass).sort((a,b)=>+a[0]-+b[0]).map(([h,s])=>{
+const r=pct(s.p,s.t);
+return barHTML(h+':00',r,100,r>=70?'#0F6E56':'#A32D2D',true);
+}).join('');
+document.getElementById('a-equity').innerHTML =
+'<div class="bs-title" style="margin-bottom:6px">Confidence distribution</div>'
++Object.entries(buckets).map(([k,v])=>barHTML(k,v,face.length,bColors[k])).join('')
++'<div class="divider"></div>'
++'<div class="bs-title" style="margin-bottom:6px">Pass rate by hour (lighting proxy)</div>'
++(hourBars||'<div class="empty">—</div>');
+const allAgents = Object.keys(as);
+const enrolledAgents  = allAgents.filter(id=>RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='ENROLLMENT'));
+const verifiedAgents  = allAgents.filter(id=>RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS'));
+const neverVerified   = allAgents.filter(id=>!RAW_EVENTS.some(e=>e.individualId===id&&e.eventType==='RE_VERIFY'));
+document.getElementById('a-attendance').innerHTML =
+barHTML('Enrolled',enrolledAgents.length,allAgents.length,'#0F6E56')
++barHTML('Face verified',verifiedAgents.length,allAgents.length,'#185FA5')
++barHTML('Never re-verified',neverVerified.length,allAgents.length,'#A32D2D')
++'<div class="divider"></div>'
++'<div style="font-size:11px;color:var(--text2)">'+allAgents.length+' unique agents in filtered data</div>';
+const risks = [];
+Object.entries(as).forEach(([id,s])=>{
+const agEv = ev.filter(e=>e.individualId===id);
+const pinCount = agEv.filter(e=>e.outcome==='PIN_FALLBACK').length;
+if(pinCount>0 && pct(pinCount,agEv.length)>50) {
+risks.push({color:'#5B3A8C',text:'PIN-dependent: '+shortId(id)+' ('+pct(pinCount,agEv.length)+'% PIN fallback)'});
 }
-
-/* ═══════════════════════════════════════════════
-   AGENT TABLE
-   ═══════════════════════════════════════════════ */
+});
+Object.keys(as).forEach(id=>{
+const agEv = ev.filter(e=>e.individualId===id&&e.eventType==='RE_VERIFY').sort((a,b)=>(a.timestamp||'').localeCompare(b.timestamp||''));
+let streak=0, maxStreak=0;
+agEv.forEach(e=>{ if(e.outcome==='MISSED'){streak++;maxStreak=Math.max(maxStreak,streak);}else{streak=0;} });
+if(maxStreak>=3) risks.push({color:'#A32D2D',text:'Consecutive misses: '+shortId(id)+' ('+maxStreak+' in a row)'});
+});
+Object.entries(as).forEach(([id,s])=>{
+const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
+if(avg>0&&avg<0.70) risks.push({color:'#854F0B',text:'Low confidence: '+shortId(id)+' (avg '+(avg*100).toFixed(0)+'%)'});
+});
+document.getElementById('a-risks').innerHTML = risks.length
+? risks.map(r=>'<div class="risk-flag"><div class="risk-dot" style="background:'+r.color+'"></div><span>'+r.text+'</span></div>').join('')
+: '<div class="empty" style="padding:12px">No risk flags in current data</div>';
+const byBoundary={};
+filteredEvents.filter(e=>e.boundaryCode).forEach(e=>{
+if(!byBoundary[e.boundaryCode]) byBoundary[e.boundaryCode]=[];
+byBoundary[e.boundaryCode].push(e);
+});
+if(Object.keys(byBoundary).length){
+document.getElementById('a-boundary').innerHTML=
+Object.entries(byBoundary).map(([code,evs])=>{
+const ag=aggregate(evs);
+return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:500">'+code+'</span><span style="color:var(--text3)">'+evs.length+' events</span></div>'+barHTML('Pass rate',ag.rvPassRate,100,ag.rvPassRate>=75?'#0F6E56':'#A32D2D',true)+'</div>';
+}).join('');
+}
+}
 function fillAvatars() {
-  Object.entries(AGENT_FACE).forEach(([id, b64]) => {
-    const slot = document.getElementById('av-' + id);
-    if (!slot || slot.children.length) return;
-    const img = document.createElement('img');
-    img.src = 'data:image/jpeg;base64,' + b64;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover';
-    slot.appendChild(img);
-  });
+Object.entries(AGENT_FACE).forEach(([id, b64]) => {
+const slot = document.getElementById('av-' + id);
+if (!slot || slot.children.length) return;
+const img = document.createElement('img');
+img.src = 'data:image/jpeg;base64,' + b64;
+img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+slot.appendChild(img);
+});
 }
-
 function renderAgentTable(filter){
-  // Use RAW_EVENTS for agent table (always shows all agents regardless of agent filter)
-  const sourceEvents = activeAgentFilter ? RAW_EVENTS : filteredEvents;
-  const as = agentStats(sourceEvents);
-  let rows = Object.entries(as);
-  if(filter==='fail')  rows=rows.filter(([,s])=>s.miss>0||s.fail>0);
-  if(filter==='below') rows=rows.filter(([,s])=>{
-    const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
-    return avg>0&&avg<0.70;
-  });
-  const tbody=document.getElementById('agent-tbody');
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No agents match filter.</td></tr>';return;}
-  tbody.innerHTML=rows.map(([id,s])=>{
-    const avgC=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
-    const cls=s.miss>0||s.fail>0?'pill-miss':s.pass===s.total?'pill-pass':'pill-warn';
-    const isActive = activeAgentFilter===id;
-    const avatarSlot = AGENT_FACE[id]
-      ? '<span id="av-'+id+'" style="display:inline-block;width:28px;height:28px;border-radius:50%;overflow:hidden;vertical-align:middle;margin-right:4px;border:1.5px solid var(--border2)"></span>'
-      : '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:26px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>';
-    const rowBg = isActive ? 'background:var(--blue-l);' : '';
-    const avgPct = avgC ? (avgC*100).toFixed(0)+'%' : '—';
-    return '<tr style="cursor:pointer;'+rowBg+'" onclick="drillAgent(\"'+id+'\")">' 
-      +'<td>'+avatarSlot+shortId(id)+'</td>'
-      +'<td>'+s.total+'</td>'
-      +'<td><span class="pill '+cls+'">'+s.pass+'/'+s.total+'</span></td>'
-      +'<td>'+s.miss+'</td>'
-      +'<td><span class="conf-bar"><span class="conf-fill" style="width:'+(avgC*100)+'%;background:'+confColor(avgC)+'"></span></span> '+avgPct+'</td>'
-      +'<td>'+timeStr(s.last)+'</td>'
-      +'</tr>';
-  }).join('');
+const sourceEvents = activeAgentFilter ? RAW_EVENTS : filteredEvents;
+const as = agentStats(sourceEvents);
+let rows = Object.entries(as);
+if(filter==='fail')  rows=rows.filter(([,s])=>s.miss>0||s.fail>0);
+if(filter==='below') rows=rows.filter(([,s])=>{
+const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
+return avg>0&&avg<0.70;
+});
+const tbody=document.getElementById('agent-tbody');
+if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No agents match filter.</td></tr>';return;}
+tbody.innerHTML=rows.map(([id,s])=>{
+const avgC=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
+const cls=s.miss>0||s.fail>0?'pill-miss':s.pass===s.total?'pill-pass':'pill-warn';
+const isActive = activeAgentFilter===id;
+const avatarSlot = AGENT_FACE[id]
+? '<span id="av-'+id+'" style="display:inline-block;width:28px;height:28px;border-radius:50%;overflow:hidden;vertical-align:middle;margin-right:4px;border:1.5px solid var(--border2)"></span>'
+: '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:26px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>';
+const rowBg = isActive ? 'background:var(--blue-l);' : '';
+const avgPct = avgC ? (avgC*100).toFixed(0)+'%' : '—';
+return '<tr style="cursor:pointer;'+rowBg+'" onclick="drillAgent(\"'+id+'\")">'
++'<td>'+avatarSlot+shortId(id)+'</td>'
++'<td>'+s.total+'</td>'
++'<td><span class="pill '+cls+'">'+s.pass+'/'+s.total+'</span></td>'
++'<td>'+s.miss+'</td>'
++'<td><span class="conf-bar"><span class="conf-fill" style="width:'+(avgC*100)+'%;background:'+confColor(avgC)+'"></span></span> '+avgPct+'</td>'
++'<td>'+timeStr(s.last)+'</td>'
++'</tr>';
+}).join('');
 }
-
 function drillAgent(id) {
-  // Filter map + feed to this agent
-  filterByAgent(id);
-  // Switch to map to see their events
-  switchTabDirect('map');
-  // Show agent timeline in right panel
-  showAgentTimeline(id);
+filterByAgent(id);
+switchTabDirect('map');
+showAgentTimeline(id);
 }
-
 function showAgentTimeline(id) {
-  const agentEvents = RAW_EVENTS.filter(e=>e.individualId===id)
-    .sort((a,b)=>(a.timestamp||'').localeCompare(b.timestamp||''));
-  const as = agentStats(agentEvents)[id] || {total:0,pass:0,miss:0,fail:0,confs:[]};
-  const avgC = as.confs.length ? as.confs.reduce((a,b)=>a+b,0)/as.confs.length : 0;
-  const enrolled = agentEvents.some(e=>e.eventType==='ENROLLMENT');
-
-  selectedItem = {individualId:id};
-  document.getElementById('rp-title').textContent = shortId(id);
-  document.getElementById('rp-back').style.display='';
-
-  const timeline = agentEvents.map(e=>{
-    const icon = e.eventType==='ENROLLMENT'?'📋':e.eventType==='LOGIN'?'🔑':e.eventType==='RE_VERIFY'?'🔄':'✓';
-    const col = outcomeColor(e.outcome);
-    const conf = e.confidence ? ' · '+(e.confidence*100).toFixed(0)+'%' : '';
-    const dur = e.responseTime ? ' · '+parseResponseSecs(e.responseTime)+'s' : '';
-    return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:.5px solid var(--border);font-size:11px">'
-      +'<span style="flex-shrink:0;width:14px;margin-top:1px">'+icon+'</span>'
-      +'<div style="flex:1"><div style="color:var(--text2)">'+e.eventType+'</div>'
-      +'<div style="color:'+col+';font-weight:500">'+e.outcome+conf+dur+'</div></div>'
-      +'<span style="color:var(--text3);white-space:nowrap">'+timeStr(e.timestamp)+'</span>'
-      +'</div>';
-  }).join('');
-
-  document.getElementById('rp-body').innerHTML =
-    '<div id="rp-face-slot" data-cls="face-thumb-lg" style="margin-bottom:8px"></div>'
-    +'<div class="stat-grid">'
-    +'<div class="stat-card"><div class="sl">Total events</div><div class="sv">'+agentEvents.length+'</div></div>'
-    +'<div class="stat-card"><div class="sl">Enrolled</div><div class="sv" style="color:'+(enrolled?'var(--teal)':'var(--red)')+'">'+( enrolled?'Yes':'No')+'</div></div>'
-    +'<div class="stat-card"><div class="sl">Pass rate</div><div class="sv" style="color:'+(pct(as.pass,as.total)>=75?'var(--teal)':'var(--red)')+'">'+pct(as.pass,as.total)+'%</div></div>'
-    +'<div class="stat-card"><div class="sl">Avg confidence</div><div class="sv" style="color:'+confColor(avgC)+'">'+( avgC?(avgC*100).toFixed(0)+'%':'—')+'</div></div>'
-    +'<div class="stat-card"><div class="sl">Misses</div><div class="sv" style="color:'+( as.miss>0?'var(--red)':'var(--text)')+'">'+as.miss+'</div></div>'
-    +'<div class="stat-card"><div class="sl">PIN fallbacks</div><div class="sv">'+agentEvents.filter(e=>e.outcome==='PIN_FALLBACK').length+'</div></div>'
-    +'</div>'
-    +'<div class="divider"></div>'
-    +'<div class="bs-title" style="margin-bottom:6px">Full event timeline</div>'
-    +(timeline||'<div class="empty">No events</div>');
-
-  setTimeout(()=>setFaceImg('rp-face-slot', AGENT_FACE[id]||null), 0);
+const agentEvents = RAW_EVENTS.filter(e=>e.individualId===id)
+.sort((a,b)=>(a.timestamp||'').localeCompare(b.timestamp||''));
+const as = agentStats(agentEvents)[id] || {total:0,pass:0,miss:0,fail:0,confs:[]};
+const avgC = as.confs.length ? as.confs.reduce((a,b)=>a+b,0)/as.confs.length : 0;
+const enrolled = agentEvents.some(e=>e.eventType==='ENROLLMENT');
+selectedItem = {individualId:id};
+document.getElementById('rp-title').textContent = shortId(id);
+document.getElementById('rp-back').style.display='';
+const timeline = agentEvents.map(e=>{
+const icon = e.eventType==='ENROLLMENT'?'📋':e.eventType==='LOGIN'?'🔑':e.eventType==='RE_VERIFY'?'🔄':'✓';
+const col = outcomeColor(e.outcome);
+const conf = e.confidence ? ' · '+(e.confidence*100).toFixed(0)+'%' : '';
+const dur = e.responseTime ? ' · '+parseResponseSecs(e.responseTime)+'s' : '';
+return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:.5px solid var(--border);font-size:11px">'
++'<span style="flex-shrink:0;width:14px;margin-top:1px">'+icon+'</span>'
++'<div style="flex:1"><div style="color:var(--text2)">'+e.eventType+'</div>'
++'<div style="color:'+col+';font-weight:500">'+e.outcome+conf+dur+'</div></div>'
++'<span style="color:var(--text3);white-space:nowrap">'+timeStr(e.timestamp)+'</span>'
++'</div>';
+}).join('');
+document.getElementById('rp-body').innerHTML =
+'<div id="rp-face-slot" data-cls="face-thumb-lg" style="margin-bottom:8px"></div>'
++'<div class="stat-grid">'
++'<div class="stat-card"><div class="sl">Total events</div><div class="sv">'+agentEvents.length+'</div></div>'
++'<div class="stat-card"><div class="sl">Enrolled</div><div class="sv" style="color:'+(enrolled?'var(--teal)':'var(--red)')+'">'+( enrolled?'Yes':'No')+'</div></div>'
++'<div class="stat-card"><div class="sl">Pass rate</div><div class="sv" style="color:'+(pct(as.pass,as.total)>=75?'var(--teal)':'var(--red)')+'">'+pct(as.pass,as.total)+'%</div></div>'
++'<div class="stat-card"><div class="sl">Avg confidence</div><div class="sv" style="color:'+confColor(avgC)+'">'+( avgC?(avgC*100).toFixed(0)+'%':'—')+'</div></div>'
++'<div class="stat-card"><div class="sl">Misses</div><div class="sv" style="color:'+( as.miss>0?'var(--red)':'var(--text)')+'">'+as.miss+'</div></div>'
++'<div class="stat-card"><div class="sl">PIN fallbacks</div><div class="sv">'+agentEvents.filter(e=>e.outcome==='PIN_FALLBACK').length+'</div></div>'
++'</div>'
++'<div class="divider"></div>'
++'<div class="bs-title" style="margin-bottom:6px">Full event timeline</div>'
++(timeline||'<div class="empty">No events</div>');
+setTimeout(()=>setFaceImg('rp-face-slot', AGENT_FACE[id]||null), 0);
 }
-
-/* ═══════════════════════════════════════════════
-   TAB SWITCHING
-   ═══════════════════════════════════════════════ */
 function switchTab(name, btn){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-  btn.classList.add('active');
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.getElementById('screen-'+name).classList.add('active');
+btn.classList.add('active');
 }
 function switchTabDirect(name){
-  const names=['map','agents','feed','analytics'];
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach((t,i)=>{ if(names[i]===name) t.classList.add('active'); else t.classList.remove('active'); });
-  document.getElementById('screen-'+name).classList.add('active');
+const names=['map','agents','feed','analytics'];
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.querySelectorAll('.tab').forEach((t,i)=>{ if(names[i]===name) t.classList.add('active'); else t.classList.remove('active'); });
+document.getElementById('screen-'+name).classList.add('active');
 }
-
-/* ═══════════════════════════════════════════════
-   INIT
-   ═══════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════
-   LOGIN / AUTH
-   ═══════════════════════════════════════════════ */
 function getSession() {
-  try {
-    const raw = sessionStorage.getItem('digit_session');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+try {
+const raw = sessionStorage.getItem('digit_session');
+return raw ? JSON.parse(raw) : null;
+} catch { return null; }
 }
-
 function setSession(data) {
-  sessionStorage.setItem('digit_session', JSON.stringify(data));
+sessionStorage.setItem('digit_session', JSON.stringify(data));
 }
-
 function clearSession() {
-  sessionStorage.removeItem('digit_session');
+sessionStorage.removeItem('digit_session');
 }
-
 function switchLoginTab(tab) {
-  const isCreds = tab === 'creds';
-  document.getElementById('panel-creds').style.display = isCreds ? '' : 'none';
-  document.getElementById('panel-token').style.display = isCreds ? 'none' : '';
-  document.getElementById('tab-creds').style.background = isCreds ? '#1C3A52' : '#f4f3ef';
-  document.getElementById('tab-creds').style.color      = isCreds ? '#fff'    : '#555';
-  document.getElementById('tab-token').style.background = isCreds ? '#f4f3ef' : '#1C3A52';
-  document.getElementById('tab-token').style.color      = isCreds ? '#555'    : '#fff';
-  document.getElementById('login-error').classList.remove('show');
+const isCreds = tab === 'creds';
+document.getElementById('panel-creds').style.display = isCreds ? '' : 'none';
+document.getElementById('panel-token').style.display = isCreds ? 'none' : '';
+document.getElementById('tab-creds').style.background = isCreds ? '#1C3A52' : '#f4f3ef';
+document.getElementById('tab-creds').style.color      = isCreds ? '#fff'    : '#555';
+document.getElementById('tab-token').style.background = isCreds ? '#f4f3ef' : '#1C3A52';
+document.getElementById('tab-token').style.color      = isCreds ? '#555'    : '#fff';
+document.getElementById('login-error').classList.remove('show');
 }
-
 function doTokenLogin() {
-  const token = document.getElementById('login-token').value.trim();
-  const errEl = document.getElementById('login-error');
-  if (!token) {
-    errEl.textContent = 'Please paste a valid auth token.';
-    errEl.classList.add('show'); return;
-  }
-  errEl.classList.remove('show');
-  // Store session with pasted token (no userInfo needed)
-  setSession({
-    authToken: token,
-    userInfo: {
-      id: 0, uuid: '', userName: 'Observer', name: 'Observer',
-      mobileNumber: '', emailId: null, locale: null,
-      active: true, tenantId: 'ba',
-      permanentCity: null, gender: null, roles: []
-    },
-    loginTime: Date.now()
-  });
-  document.getElementById('login-screen').classList.add('hidden');
-  loadData();
+const token = document.getElementById('login-token').value.trim();
+const errEl = document.getElementById('login-error');
+if (!token) {
+errEl.textContent = 'Please paste a valid auth token.';
+errEl.classList.add('show'); return;
 }
-
-async function doLogin() {
-  const username = document.getElementById('login-username').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errEl    = document.getElementById('login-error');
-  const spinEl   = document.getElementById('login-spinner');
-  const btnEl    = document.getElementById('login-btn');
-
-  if (!username || !password) {
-    errEl.textContent = 'Please enter username and password.';
-    errEl.classList.add('show'); return;
-  }
-
-  errEl.classList.remove('show');
-  btnEl.disabled = true;
-  spinEl.classList.add('show');
-
-  try {
-    const res = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-
-    if (!data.success) {
-      errEl.textContent = data.error || 'Login failed. Check your credentials.';
-      errEl.classList.add('show');
-      return;
-    }
-
-    // Store session
-    setSession({ authToken: data.authToken, userInfo: data.userInfo, loginTime: Date.now() });
-
-    // Hide login, show dashboard
-    document.getElementById('login-screen').classList.add('hidden');
-    loadData();
-
-  } catch (err) {
-    errEl.textContent = 'Could not reach the server. Try again.';
-    errEl.classList.add('show');
-  } finally {
-    btnEl.disabled = false;
-    spinEl.classList.remove('show');
-  }
-}
-
-function doLogout() {
-  clearSession();
-  location.reload();
-}
-
-// Allow Enter key to submit
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
-    doLogin();
-  }
+errEl.classList.remove('show');
+setSession({
+authToken: token,
+userInfo: {
+id: 0, uuid: '', userName: 'Observer', name: 'Observer',
+mobileNumber: '', emailId: null, locale: null,
+active: true, tenantId: 'ba',
+permanentCity: null, gender: null, roles: []
+},
+loginTime: Date.now()
 });
-
+document.getElementById('login-screen').classList.add('hidden');
+loadData();
+}
+async function doLogin() {
+const username = document.getElementById('login-username').value.trim();
+const password = document.getElementById('login-password').value;
+const errEl    = document.getElementById('login-error');
+const spinEl   = document.getElementById('login-spinner');
+const btnEl    = document.getElementById('login-btn');
+if (!username || !password) {
+errEl.textContent = 'Please enter username and password.';
+errEl.classList.add('show'); return;
+}
+errEl.classList.remove('show');
+btnEl.disabled = true;
+spinEl.classList.add('show');
+try {
+const res = await fetch('/api/auth', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ username, password }),
+});
+const data = await res.json();
+if (!data.success) {
+errEl.textContent = data.error || 'Login failed. Check your credentials.';
+errEl.classList.add('show');
+return;
+}
+setSession({ authToken: data.authToken, userInfo: data.userInfo, loginTime: Date.now() });
+document.getElementById('login-screen').classList.add('hidden');
+loadData();
+} catch (err) {
+errEl.textContent = 'Could not reach the server. Try again.';
+errEl.classList.add('show');
+} finally {
+btnEl.disabled = false;
+spinEl.classList.remove('show');
+}
+}
+function doLogout() {
+clearSession();
+location.reload();
+}
+document.addEventListener('keydown', e => {
+if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+doLogin();
+}
+});
 window.addEventListener('load', ()=>{
-  initMap();
-  // Check for existing session
-  const session = getSession();
-  if (session && session.authToken) {
-    // Already logged in — hide login screen and load data
-    document.getElementById('login-screen').classList.add('hidden');
-    loadData();
-  }
-  // else: login screen stays visible, user must log in
-  setInterval(()=>{ if(getSession()) loadData(); }, 5*60*1000);
+initMap();
+const session = getSession();
+if (session && session.authToken) {
+document.getElementById('login-screen').classList.add('hidden');
+loadData();
+}
+setInterval(()=>{ if(getSession()) loadData(); }, 5*60*1000);
 });
 </script>
 </body>
