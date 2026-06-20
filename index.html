@@ -253,18 +253,51 @@ input[type=date]::-webkit-inner-spin-button{display:none}
       <h1>Bauchi FaceID War Room</h1>
       <p>Pilot monitoring dashboard</p>
     </div>
-    <div class="login-field">
-      <label>Username</label>
-      <input type="text" id="login-username" placeholder="Enter your username" autocomplete="username">
+
+    <!-- Tab toggle -->
+    <div style="display:flex;border:.5px solid #ddd;border-radius:8px;overflow:hidden;margin-bottom:18px">
+      <button id="tab-creds" onclick="switchLoginTab('creds')"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;background:#1C3A52;color:#fff;cursor:pointer">
+        Username &amp; Password
+      </button>
+      <button id="tab-token" onclick="switchLoginTab('token')"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;border:none;background:#f4f3ef;color:#555;cursor:pointer">
+        Paste Token
+      </button>
     </div>
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+
+    <!-- Credentials panel -->
+    <div id="panel-creds">
+      <div class="login-field">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="Enter your username" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
     </div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+
+    <!-- Token paste panel -->
+    <div id="panel-token" style="display:none">
+      <div class="login-field">
+        <label>Auth Token</label>
+        <textarea id="login-token" placeholder="Paste your DIGIT auth token here"
+          style="width:100%;padding:9px 12px;border:1px solid #ccc;border-radius:7px;font-size:12px;font-family:monospace;height:80px;resize:none;outline:none"></textarea>
+      </div>
+      <div style="font-size:11px;color:#999;margin-bottom:10px">
+        Get token by running:<br>
+        <code style="font-size:10px;background:#f4f3ef;padding:2px 6px;border-radius:4px;display:block;margin-top:4px;word-break:break-all">
+          curl -s '.../user/oauth/token' ... | grep access_token
+        </code>
+      </div>
+      <button class="login-btn" onclick="doTokenLogin()">Use token</button>
+    </div>
+
     <div class="login-error" id="login-error"></div>
     <div class="login-spinner" id="login-spinner">Signing in…</div>
-    <div class="login-tenant">Tenant: Bauchi State (ba) · DIGIT HCM</div>
+    <div class="login-tenant" style="margin-top:12px">Tenant: Bauchi State (ba) · DIGIT HCM</div>
   </div>
 </div>
 
@@ -1698,6 +1731,40 @@ function setSession(data) {
 
 function clearSession() {
   sessionStorage.removeItem('digit_session');
+}
+
+function switchLoginTab(tab) {
+  const isCreds = tab === 'creds';
+  document.getElementById('panel-creds').style.display = isCreds ? '' : 'none';
+  document.getElementById('panel-token').style.display = isCreds ? 'none' : '';
+  document.getElementById('tab-creds').style.background = isCreds ? '#1C3A52' : '#f4f3ef';
+  document.getElementById('tab-creds').style.color      = isCreds ? '#fff'    : '#555';
+  document.getElementById('tab-token').style.background = isCreds ? '#f4f3ef' : '#1C3A52';
+  document.getElementById('tab-token').style.color      = isCreds ? '#555'    : '#fff';
+  document.getElementById('login-error').classList.remove('show');
+}
+
+function doTokenLogin() {
+  const token = document.getElementById('login-token').value.trim();
+  const errEl = document.getElementById('login-error');
+  if (!token) {
+    errEl.textContent = 'Please paste a valid auth token.';
+    errEl.classList.add('show'); return;
+  }
+  errEl.classList.remove('show');
+  // Store session with pasted token (no userInfo needed)
+  setSession({
+    authToken: token,
+    userInfo: {
+      id: 0, uuid: '', userName: 'Observer', name: 'Observer',
+      mobileNumber: '', emailId: null, locale: null,
+      active: true, tenantId: 'ba',
+      permanentCity: null, gender: null, roles: []
+    },
+    loginTime: Date.now()
+  });
+  document.getElementById('login-screen').classList.add('hidden');
+  loadData();
 }
 
 async function doLogin() {
