@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bauchi FaceID Pilot</title>
+<title>Bauchi FaceID Pilot — War Room</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -56,7 +56,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .tab:hover:not(.active){color:var(--text)}
 
 /* L1 metric strip */
-.metric-strip{display:grid;grid-template-columns:repeat(6,1fr);border-bottom:.5px solid var(--border);flex-shrink:0}
+.metric-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:.5px solid var(--border);flex-shrink:0}
 .mc{padding:9px 12px;border-right:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .mc:last-child{border-right:none}
 .mc:hover,.mc.active{background:var(--blue-l)}
@@ -378,16 +378,11 @@ input[type=date]::-webkit-inner-spin-button{display:none}
     <div class="mc-sub" id="m-login-sub">LOGIN events</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-login" style="background:#185FA5"></div></div>
   </div>
-  <div class="mc" id="mc-pin" onclick="toggleL2('pin',this)"><div class="mc-label">PIN fallback rate</div><div class="mc-val" id="m-pin">—</div><div class="mc-sub" id="m-pin-sub">of all events</div><div class="mc-bar"><div class="mc-fill" id="mb-pin" style="background:#5B3A8C"></div></div></div><div class="mc" id="mc-checkin">
-    <div class="mc-label">Check-in pass</div>
-    <div class="mc-val" id="m-checkin">—</div>
-    <div class="mc-sub" id="m-checkin-sub">CHECK_IN events</div>
-    <div class="mc-bar"><div class="mc-fill" id="mb-checkin" style="background:#0F6E56"></div></div>
-  </div>
+  <div class="mc" id="mc-pin" onclick="toggleL2('pin',this)"><div class="mc-label">PIN fallback rate</div><div class="mc-val" id="m-pin">—</div><div class="mc-sub" id="m-pin-sub">of all events</div><div class="mc-bar"><div class="mc-fill" id="mb-pin" style="background:#5B3A8C"></div></div></div>
   <div class="mc" id="mc-conf" onclick="toggleL2('conf',this)">
     <div class="mc-label">Avg confidence</div>
     <div class="mc-val" id="m-conf">—</div>
-    <div class="mc-sub">Threshold ≥ 0.75</div>
+    <div class="mc-sub">Threshold ≥ 0.70</div>
     <div class="mc-bar"><div class="mc-fill" id="mb-conf" style="background:#854F0B"></div></div>
   </div>
   <div class="mc" id="mc-miss" onclick="toggleL2('miss',this)">
@@ -507,21 +502,21 @@ input[type=date]::-webkit-inner-spin-button{display:none}
     <!-- Two column sections -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">A — Reliability</div>
+        <div class="bs-title">A — System Reliability (RE_VERIFY)</div>
         <div id="a-reliability"><div class="empty">Loading…</div></div>
       </div>
       <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">B — Equity (confidence)</div>
+        <div class="bs-title">B — Accuracy &amp; Equity</div>
         <div id="a-equity"><div class="empty">Loading…</div></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">C — Attendance picture</div>
+        <div class="bs-title">C — Attendance &amp; Coverage</div>
         <div id="a-attendance"><div class="empty">Loading…</div></div>
       </div>
       <div style="background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:10px 12px">
-        <div class="bs-title">D — Risk flags</div>
+        <div class="bs-title">D — Risk Flags &amp; Blockers</div>
         <div id="a-risks"><div class="empty">Loading…</div></div>
       </div>
     </div>
@@ -726,7 +721,7 @@ function hideLoading() {
 function pct(n,d){ return d ? Math.round(n/d*100) : 0; }
 function confColor(c){
   if(c>=0.85) return '#0F6E56';
-  if(c>=0.75) return '#854F0B';
+  if(c>=0.70) return '#854F0B';
   if(c>0)     return '#A32D2D';
   return '#9ca3af';
 }
@@ -860,10 +855,7 @@ function updateMetricStrip(){
   setEl('m-login-sub', a.login+' LOGIN events');
   setStyle('mb-login','width', a.lgPassRate+'%');
   setStyle('mb-login','background', a.lgPassRate>=85?'#0F6E56':'#854F0B');
-  setEl('m-checkin', a.checkin ? a.ciPassRate+'%' : '—');
-  setEl('m-checkin-sub', a.checkin+' CHECK_IN events');
-  setStyle('mb-checkin','width', a.ciPassRate+'%');
-  setStyle('mb-checkin','background', a.ciPassRate>=75?'#0F6E56':'#A32D2D');
+
   setEl('m-conf', a.avgConf ? (a.avgConf*100).toFixed(1)+'%' : '—');
   setStyle('mb-conf','width',(a.avgConf*100)+'%');
   setStyle('mb-conf','background',confColor(a.avgConf));
@@ -1014,12 +1006,12 @@ function renderL2(metric) {
     const face = ev.filter(e=>e.confidence>0);
     const buckets = [
       {label:'≥ 85%', min:0.85, max:1.01, color:'#0F6E56'},
-      {label:'75–84%',min:0.75, max:0.85,  color:'#854F0B'},
-      {label:'50–74%',min:0.50, max:0.75,  color:'#C2400C'},
+      {label:'75–84%',min:0.70, max:0.85,  color:'#854F0B'},
+      {label:'50–74%',min:0.50, max:0.70,  color:'#C2400C'},
       {label:'< 50%', min:0,    max:0.50,  color:'#A32D2D'},
     ];
     const counts = buckets.map(b=>({...b, count: face.filter(e=>e.confidence>=b.min && e.confidence<b.max).length}));
-    const below = face.filter(e=>e.confidence<0.75);
+    const below = face.filter(e=>e.confidence<0.70);
     const byAgent = {};
     face.forEach(e=>{
       if(!byAgent[e.individualId]) byAgent[e.individualId]=[];
@@ -1036,7 +1028,7 @@ function renderL2(metric) {
       </div>
       <div class="l2-card">
         <div class="l2-card-title">Lowest avg confidence agents</div>
-        ${agentAvgs.map(a=>l2Bar(shortId(a.id),Math.round(a.avg*100),100,a.avg>=0.75?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
+        ${agentAvgs.map(a=>l2Bar(shortId(a.id),Math.round(a.avg*100),100,a.avg>=0.70?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
         <div class="l2-sub" style="margin-top:6px">${below.length} scans below 0.75 threshold</div>
       </div>`;
   }
@@ -1156,8 +1148,7 @@ function updateMapDots(){
     m.bindPopup(popupHTML(e), {maxWidth:220});
     m.on('click',()=>{
       showEventDetail(e);
-      // If agent filter active, pan to this dot
-      if(activeAgentFilter) map.panTo([e.lat, e.lng]);
+      map.panTo([e.lat, e.lng], {animate:true, duration:0.5});
     });
   });
   // If events exist and no specific view, fit map to dots
@@ -1185,17 +1176,24 @@ function faceImgTag(faceImage, cls='face-thumb') {
 }
 
 function popupHTML(e){
-  const face = AGENT_FACE[e.individualId];
+  // Use event's own faceImage first, fall back to agent's cached face
+  const face = e.faceImage || AGENT_FACE[e.individualId] || null;
   const imgHtml = face ? '<img src="data:image/jpeg;base64,' + face + '" style="width:64px;height:64px;border-radius:6px;object-fit:cover;display:block;margin-bottom:6px;border:1px solid #ddd">' : '';
-  return `<div style="font-size:12px;line-height:1.7;min-width:155px">
-    ${imgHtml}
-    <div style="font-weight:600;margin-bottom:3px">${shortId(e.individualId)}</div>
-    <div><b>Type:</b> ${e.eventType}</div>
-    <div><b>Outcome:</b> <span style="color:${outcomeColor(e.outcome)}">${e.outcome}</span></div>
-    <div><b>Confidence:</b> ${e.confidence?(e.confidence*100).toFixed(1)+'%':'—'}</div>
-    <div><b>Time:</b> ${timeStr(e.timestamp)}</div>
-    <div><b>GPS acc:</b> ${e.locationAccuracy?e.locationAccuracy.toFixed(0)+'m':'—'}</div>
-  </div>`;
+  const confColor_ = e.confidence>=0.85?'#0F6E56':e.confidence>=0.70?'#854F0B':e.confidence>0?'#A32D2D':'#999';
+  return '<div style="font-size:12px;line-height:1.7;min-width:160px">'
+    + imgHtml
+    + '<div style="font-weight:600;margin-bottom:4px;font-size:13px">' + shortId(e.individualId) + '</div>'
+    + '<div style="display:flex;gap:6px;margin-bottom:4px">'
+    +   '<span style="background:' + outcomeColor(e.outcome) + '20;color:' + outcomeColor(e.outcome) + ';padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600">' + e.outcome + '</span>'
+    +   '<span style="color:#999;font-size:10px">' + e.eventType + '</span>'
+    + '</div>'
+    + '<div style="font-size:11px;color:#555;line-height:1.8">'
+    +   '<div><b>Confidence:</b> <span style="color:' + confColor_ + '">' + (e.confidence?(e.confidence*100).toFixed(1)+'%':'—') + '</span></div>'
+    +   '<div><b>Time:</b> ' + (e.timestamp||'—') + '</div>'
+    +   '<div><b>GPS accuracy:</b> ' + (e.locationAccuracy?e.locationAccuracy.toFixed(0)+'m':'—') + '</div>'
+    +   (e.responseTime ? '<div><b>Response:</b> ' + (parseResponseSecs(e.responseTime)||'—') + 's</div>' : '')
+    + '</div>'
+    + '</div>';
 }
 
 function setMapView(v, btn){
@@ -1332,7 +1330,7 @@ function showEventDetail(e){
       <div><b>Device ID:</b> ${e.deviceId||'—'}</div>
     </div>`;
 
-  setTimeout(()=>setFaceImg('rp-face-slot', AGENT_FACE[e.individualId]||null), 0);}
+  setTimeout(()=>setFaceImg('rp-face-slot', e.faceImage||AGENT_FACE[e.individualId]||null), 0);}
 
 function clearSelection(){
   selectedItem=null;
@@ -1466,7 +1464,7 @@ function renderAnalytics(){
   if(a.rvPassRate<50) flags.push('⚠ RE_VERIFY pass rate critically low ('+a.rvPassRate+'%)');
   if(a.missRate>50)   flags.push('⚠ More than half of RE_VERIFY prompts are being missed');
   if(a.pinRate>20)    flags.push('⚠ High PIN fallback rate — face recognition unreliable');
-  if(a.avgConf<0.75)  flags.push('⚠ Average confidence below 0.75 threshold');
+  if(a.avgConf<0.70)  flags.push('⚠ Average confidence below 0.75 threshold');
   document.getElementById('a-score-flags').innerHTML = flags.join('<br>');
 
   // ── Dimensions ──
@@ -1479,8 +1477,8 @@ function renderAnalytics(){
      detail: a.missed+' timeouts of '+a.reverify+' RE_VERIFY events ('+a.missRate+'% miss rate)'},
     {id:'lg',   label:'Login pass rate',      score:lgScore,    w:'15%', threshold:85,
      detail: a.lgPass+' successful logins of '+a.login+' total login events'},
-    {id:'conf', label:'Avg confidence score', score:confScore,  w:'15%', threshold:75,
-     detail: 'Average: '+(a.avgConf?(a.avgConf*100).toFixed(1)+'%':'—')+' across all face scans (threshold ≥ 75%)'},
+    {id:'conf', label:'Avg confidence score', score:confScore,  w:'15%', threshold:70,
+     detail: 'Average: '+(a.avgConf?(a.avgConf*100).toFixed(1)+'%':'—')+' across all face scans (threshold ≥ 70%)'},
   ];
   document.getElementById('a-dimensions').innerHTML = dims.map(d=>{
     const col = d.score>=d.threshold?'#0F6E56':d.score>=d.threshold*0.7?'#854F0B':'#A32D2D';
@@ -1506,8 +1504,23 @@ function renderAnalytics(){
   });
   const trendBars = Object.entries(rvTrend).sort().map(([d,t])=>{
     const r=pct(t.pass,t.total);
-    return barHTML(d.slice(5),r,100,r>=75?'#0F6E56':'#A32D2D',true);
+    return barHTML(d.slice(5),r,100,r>=70?'#0F6E56':'#A32D2D',true);
   }).join('');
+  // Avg response duration for RE_VERIFY
+  const rvWithDur = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.responseTime);
+  const durations = rvWithDur.map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+  const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
+  const passDur = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS'&&e.responseTime)
+    .map(e=>parseResponseSecs(e.responseTime)).filter(s=>s!==null);
+  const avgPassDur = passDur.length ? Math.round(passDur.reduce((a,b)=>a+b,0)/passDur.length) : null;
+  // Avg attempts for RE_VERIFY success
+  const rvPassEv = ev.filter(e=>e.eventType==='RE_VERIFY'&&e.outcome==='FACE_SUCCESS');
+  const attempts = rvPassEv.map(e=>(e.failedAttemptCount||0)+1);
+  const avgAttempts = attempts.length ? (attempts.reduce((a,b)=>a+b,0)/attempts.length).toFixed(2) : '—';
+  const first1 = attempts.filter(a=>a===1).length;
+  const second1 = attempts.filter(a=>a===2).length;
+  const third1 = attempts.filter(a=>a>=3).length;
+
   document.getElementById('a-reliability').innerHTML =
     '<div class="bs-title" style="margin-bottom:6px">RE_VERIFY pass by date</div>'
     +(trendBars||'<div class="empty">No RE_VERIFY events</div>')
@@ -1515,17 +1528,32 @@ function renderAnalytics(){
     +'<div class="bs-title" style="margin-bottom:6px">Outcome split</div>'
     +barHTML('Face pass',a.rvPass,a.reverify||1,'#0F6E56')
     +barHTML('Missed',a.missed,a.reverify||1,'#A32D2D')
-    +barHTML('PIN fallback',a.pinFall,a.reverify||1,'#5B3A8C');
+    +barHTML('PIN fallback',a.pinFall,a.reverify||1,'#5B3A8C')
+    +'<div class="divider"></div>'
+    +'<div class="bs-title" style="margin-bottom:6px">Response duration (popup → completion)</div>'
+    +'<div style="font-size:11px;color:var(--text2);line-height:2">'
+    +'<div>Avg (all RE_VERIFY): <b>'+(avgDur!==null?avgDur+'s':'—')+'</b></div>'
+    +'<div>Avg (successful only): <b>'+(avgPassDur!==null?avgPassDur+'s':'—')+'</b></div>'
+    +'<div>No response (timeout): <b>'+(a.reverify-durations.length)+'</b></div>'
+    +'</div>'
+    +'<div class="divider"></div>'
+    +'<div class="bs-title" style="margin-bottom:6px">Attempts before success</div>'
+    +'<div style="font-size:11px;color:var(--text2);line-height:2">'
+    +'<div>Avg attempts: <b>'+avgAttempts+'</b></div>'
+    +'</div>'
+    +barHTML('1st attempt',first1,rvPassEv.length||1,'#0F6E56')
+    +barHTML('2nd attempt',second1,rvPassEv.length||1,'#854F0B')
+    +barHTML('3rd+ attempt',third1,rvPassEv.length||1,'#A32D2D');
 
   // ── Section B: Equity ──
   const face = ev.filter(e=>e.confidence>0);
-  const buckets = {'≥ 85%':0,'75–84%':0,'50–74%':0,'< 50%':0};
-  const bColors = {'≥ 85%':'#0F6E56','75–84%':'#854F0B','50–74%':'#C2400C','< 50%':'#A32D2D'};
+  const buckets = {'≥ 85%':0,'70–84%':0,'50–69%':0,'< 50%':0};
+  const bColors = {'≥ 85%':'#0F6E56','70–84%':'#854F0B','50–69%':'#C2400C','< 50%':'#A32D2D'};
   face.forEach(e=>{
     const c=e.confidence;
     if(c>=0.85) buckets['≥ 85%']++;
-    else if(c>=0.75) buckets['75–84%']++;
-    else if(c>=0.5)  buckets['50–74%']++;
+    else if(c>=0.70) buckets['70–84%']++;
+    else if(c>=0.5)  buckets['50–69%']++;
     else buckets['< 50%']++;
   });
   const hourPass={};
@@ -1537,7 +1565,7 @@ function renderAnalytics(){
   });
   const hourBars = Object.entries(hourPass).sort((a,b)=>+a[0]-+b[0]).map(([h,s])=>{
     const r=pct(s.p,s.t);
-    return barHTML(h+':00',r,100,r>=75?'#0F6E56':'#A32D2D',true);
+    return barHTML(h+':00',r,100,r>=70?'#0F6E56':'#A32D2D',true);
   }).join('');
   document.getElementById('a-equity').innerHTML =
     '<div class="bs-title" style="margin-bottom:6px">Confidence distribution</div>'
@@ -1621,7 +1649,7 @@ function renderAgentTable(filter){
   if(filter==='fail')  rows=rows.filter(([,s])=>s.miss>0||s.fail>0);
   if(filter==='below') rows=rows.filter(([,s])=>{
     const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
-    return avg>0&&avg<0.75;
+    return avg>0&&avg<0.70;
   });
   const tbody=document.getElementById('agent-tbody');
   if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No agents match filter.</td></tr>';return;}
