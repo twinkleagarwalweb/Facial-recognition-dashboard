@@ -202,10 +202,71 @@ input[type=date]::-webkit-inner-spin-button{display:none}
 .risk-flag{display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border);font-size:11px}
 .risk-flag:last-child{border-bottom:none}
 .risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+
+/* ── Login screen ── */
+#login-screen{
+  position:fixed;inset:0;background:var(--navy);
+  display:flex;align-items:center;justify-content:center;
+  z-index:99999;flex-direction:column;gap:0;
+}
+#login-screen.hidden{display:none}
+.login-box{
+  background:#fff;border-radius:12px;padding:32px 36px;
+  width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.25);
+}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo h1{font-size:18px;font-weight:700;color:var(--navy);margin-top:8px}
+.login-logo p{font-size:12px;color:var(--text3);margin-top:3px}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.login-field input{
+  width:100%;padding:9px 12px;border:1px solid var(--border2);
+  border-radius:7px;font-size:13px;color:var(--text);outline:none;
+  transition:border .15s;
+}
+.login-field input:focus{border-color:var(--blue)}
+.login-btn{
+  width:100%;padding:10px;background:var(--navy);color:#fff;
+  border:none;border-radius:7px;font-size:13px;font-weight:600;
+  cursor:pointer;margin-top:6px;transition:opacity .15s;
+}
+.login-btn:hover{opacity:.88}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-error{
+  background:var(--red-l);color:var(--red);border-radius:6px;
+  padding:8px 10px;font-size:12px;margin-top:10px;display:none;
+}
+.login-error.show{display:block}
+.login-spinner{display:none;text-align:center;margin-top:10px;font-size:12px;color:var(--text3)}
+.login-spinner.show{display:block}
+.login-tenant{font-size:11px;color:var(--text3);text-align:center;margin-top:14px}
 </style>
 </head>
 <body>
 <div class="app">
+
+<!-- Login screen -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div style="font-size:28px">🏥</div>
+      <h1>Bauchi FaceID War Room</h1>
+      <p>Pilot monitoring dashboard</p>
+    </div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="Enter your username" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-spinner" id="login-spinner">Signing in…</div>
+    <div class="login-tenant">Tenant: Bauchi State (ba) · DIGIT HCM</div>
+  </div>
+</div>
 
 <!-- Loading overlay -->
 <div id="loading-overlay">
@@ -258,6 +319,7 @@ input[type=date]::-webkit-inner-spin-button{display:none}
     </select>
     <span class="updated-pill" id="updated-pill">—</span>
     <button class="refresh-btn" id="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    <button class="refresh-btn" onclick="doLogout()" title="Sign out" style="background:rgba(255,255,255,.1)">⎋ Logout</button>
   </div>
 </div>
 
@@ -544,7 +606,21 @@ async function loadData() {
 
   try {
     const limitVal = document.getElementById('limit-select').value;
-    const res = await fetch('/api/events?limit=' + limitVal);
+    const session = getSession();
+    const headers = { 'Content-Type': 'application/json' };
+    if (session?.authToken) {
+      headers['Authorization'] = 'Bearer ' + session.authToken;
+      if (session.userInfo) {
+        headers['X-User-Info'] = encodeURIComponent(JSON.stringify(session.userInfo));
+      }
+    }
+    const res = await fetch('/api/events?limit=' + limitVal, { headers });
+    // If 401, token expired — redirect to login
+    if (res.status === 401) {
+      clearSession();
+      location.reload();
+      return;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -1605,11 +1681,94 @@ function switchTabDirect(name){
 /* ═══════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════
+   LOGIN / AUTH
+   ═══════════════════════════════════════════════ */
+function getSession() {
+  try {
+    const raw = sessionStorage.getItem('digit_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function setSession(data) {
+  sessionStorage.setItem('digit_session', JSON.stringify(data));
+}
+
+function clearSession() {
+  sessionStorage.removeItem('digit_session');
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const spinEl   = document.getElementById('login-spinner');
+  const btnEl    = document.getElementById('login-btn');
+
+  if (!username || !password) {
+    errEl.textContent = 'Please enter username and password.';
+    errEl.classList.add('show'); return;
+  }
+
+  errEl.classList.remove('show');
+  btnEl.disabled = true;
+  spinEl.classList.add('show');
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      errEl.textContent = data.error || 'Login failed. Check your credentials.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    // Store session
+    setSession({ authToken: data.authToken, userInfo: data.userInfo, loginTime: Date.now() });
+
+    // Hide login, show dashboard
+    document.getElementById('login-screen').classList.add('hidden');
+    loadData();
+
+  } catch (err) {
+    errEl.textContent = 'Could not reach the server. Try again.';
+    errEl.classList.add('show');
+  } finally {
+    btnEl.disabled = false;
+    spinEl.classList.remove('show');
+  }
+}
+
+function doLogout() {
+  clearSession();
+  location.reload();
+}
+
+// Allow Enter key to submit
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+    doLogin();
+  }
+});
+
 window.addEventListener('load', ()=>{
   initMap();
-  loadData();
-  // Auto-refresh every 5 minutes
-  setInterval(loadData, 5*60*1000);
+  // Check for existing session
+  const session = getSession();
+  if (session && session.authToken) {
+    // Already logged in — hide login screen and load data
+    document.getElementById('login-screen').classList.add('hidden');
+    loadData();
+  }
+  // else: login screen stays visible, user must log in
+  setInterval(()=>{ if(getSession()) loadData(); }, 5*60*1000);
 });
 </script>
 </body>
