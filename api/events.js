@@ -90,7 +90,7 @@ module.exports = async function handler(req, res) {
   // Fall back to hardcoded token for backward compatibility
   const authHeader = req.headers['authorization'] || '';
   const authToken = authHeader.replace('Bearer ', '') ||
-    '6edda9c7-e97c-4cb1-b73c-93d1dd56c837';
+    '1cf6a3e1-1c7e-4520-8951-85bd220237fe';
 
   // Get userInfo from header if provided
   let userInfo = null;
