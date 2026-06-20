@@ -3,13 +3,6 @@
 const BASE_URL  = 'https://bauchi-hcm.digit.org';
 const TENANT_ID = 'ba';
 
-// Known DIGIT OAuth client credentials (try in order until one works)
-const CLIENTS = [
-  'ZWdvdi11c2VyLWNsaWVudDo=',           // egov-user-client:  (most common)
-  'ZWdvdi11c2VyLWNsaWVudDplZ292LXVzZXItc2VjcmV0', // egov-user-client:egov-user-secret
-  'Y2l0aXplbi1wb3J0YWw6',               // citizen-portal:
-];
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -25,53 +18,56 @@ module.exports = async function handler(req, res) {
     res.status(400).json({ success: false, error: 'Username and password required' }); return;
   }
 
-  const params = new URLSearchParams({
-    username,
-    password,
-    grant_type: 'password',
-    scope: 'read',
-    tenantId: TENANT_ID,
-    userType: 'EMPLOYEE',
-  });
+  // Try both with and without userType, and both user types
+  const attempts = [
+    { userType: 'EMPLOYEE' },
+    { userType: 'CITIZEN'  },
+    { userType: 'SYSTEM'   },
+    {}  // no userType
+  ];
 
-  // Try each client credential until one works
   let tokenData = null;
-  let lastError = '';
-  let lastStatus = 0;
+  let debugLog  = [];
 
-  for (const clientB64 of CLIENTS) {
+  for (const extra of attempts) {
+    const params = new URLSearchParams({
+      username,
+      password,
+      grant_type: 'password',
+      scope: 'read',
+      tenantId: TENANT_ID,
+      ...extra,
+    });
+
     try {
       const tokenRes = await fetch(`${BASE_URL}/user/oauth/token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${clientB64}`,
+          'Content-Type':  'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ZWdvdi11c2VyLWNsaWVudDo=',
+          'accept': 'application/json, text/plain, */*',
         },
         body: params.toString(),
       });
 
-      lastStatus = tokenRes.status;
       const text = await tokenRes.text();
+      debugLog.push({ attempt: extra, status: tokenRes.status, body: text.slice(0, 200) });
 
       if (tokenRes.ok) {
         try { tokenData = JSON.parse(text); } catch {}
-        if (tokenData?.access_token) break; // success
-      } else {
-        lastError = `${tokenRes.status}: ${text.slice(0, 150)}`;
+        if (tokenData?.access_token) break;
       }
     } catch (err) {
-      lastError = err.message;
+      debugLog.push({ attempt: extra, error: err.message });
     }
   }
 
   if (!tokenData?.access_token) {
-    // Return detailed error for debugging
+    // Return full debug so we can see exactly what DIGIT says
     res.status(401).json({
       success: false,
-      error: lastStatus === 400 || lastStatus === 401
-        ? 'Invalid username or password'
-        : `Auth failed (${lastStatus}): ${lastError}`,
-      debug: { lastStatus, lastError }
+      error: 'Invalid username or password',
+      debug: debugLog
     });
     return;
   }
@@ -112,15 +108,15 @@ module.exports = async function handler(req, res) {
       id:            userInfo.id,
       uuid:          userInfo.uuid,
       userName:      userInfo.userName || username,
-      name:          userInfo.name || username,
-      mobileNumber:  userInfo.mobileNumber || '',
-      emailId:       userInfo.emailId || null,
-      locale:        userInfo.locale  || null,
-      active:        userInfo.active !== false,
+      name:          userInfo.name     || username,
+      mobileNumber:  userInfo.mobileNumber  || '',
+      emailId:       userInfo.emailId  || null,
+      locale:        userInfo.locale   || null,
+      active:        userInfo.active   !== false,
       tenantId:      TENANT_ID,
       permanentCity: userInfo.permanentCity || null,
-      gender:        userInfo.gender  || null,
-      roles:         userInfo.roles   || [],
+      gender:        userInfo.gender   || null,
+      roles:         userInfo.roles    || [],
     } : {
       id: 0, uuid: '', userName: username, name: username,
       mobileNumber: '', emailId: null, locale: null,
