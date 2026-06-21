@@ -297,7 +297,7 @@ let selectedItem = null;
 let map, dotLayer, choroLayer;
 let isLoading = false;
 let feedView = 'all';
-let feedSort = 'desc'; // 'desc' = newest first, 'asc' = oldest first // 'all' | 'latest' | 'fails'
+let feedSort = 'desc'; // desc=newest first, asc=oldest first
 let activeAgentFilter = null;
 let activeL2 = null;
 function parseResponseSecs(rt) {
@@ -986,6 +986,12 @@ document.getElementById('rp-back').style.display='none';
 choroLayer.eachLayer(l=>choroLayer.resetStyle(l));
 renderRightPanel();
 }
+function setFeedSort(dir, btn) {
+feedSort = dir;
+document.getElementById('sort-desc-btn').classList.toggle('active-toggle', dir==='desc');
+document.getElementById('sort-asc-btn').classList.toggle('active-toggle', dir==='asc');
+renderFeed();
+}
 function setFeedView(view, btn) {
 feedView = view;
 document.querySelectorAll('.feed-toggle').forEach(b => b.classList.remove('active-toggle'));
@@ -1060,7 +1066,7 @@ body.innerHTML =
 +'<div><b>Boundary:</b> '+(e.boundaryCode||'Not populated')+'</div>'
 +'</div>'
 +'<div class="divider"></div>'
-+'<button data-action="drill" data-id="'+e.individualId+'" style="width:100%;padding:7px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500">View agent timeline →</button>';  
++'<button onclick="handleDrillClick(this)" data-id="'+e.individualId+'" style="width:100%;padding:7px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500">View agent timeline &#8594;</button>';  
 setTimeout(()=>{
 const slot = document.getElementById('feed-dp-face');
 if(slot && face){
@@ -1293,7 +1299,7 @@ const avatarSlot = AGENT_FACE[id]
 : '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);text-align:center;line-height:26px;font-size:14px;vertical-align:middle;margin-right:4px">👤</span>';
 const rowBg = isActive ? 'background:var(--blue-l);' : '';
 const avgPct = avgC ? (avgC*100).toFixed(0)+'%' : '—';
-return '<tr style="cursor:pointer;'+rowBg+'" data-action="drillrow" data-id="'+id+'">'  
+return '<tr style="cursor:pointer;'+rowBg+'" data-id="'+id+'" onclick="handleAgentClick(this)">'  
 +'<td>'+avatarSlot+shortId(id)+'</td>'
 +'<td>'+s.total+'</td>'
 +'<td><span class="pill '+cls+'">'+s.pass+'/'+s.total+'</span></td>'
@@ -1366,7 +1372,7 @@ document.getElementById('agent-detail-body').innerHTML =
 +'<div class="divider"></div>'
 +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
 +'<div class="bs-title">Event timeline ('+agentEvents.length+')</div>'
-+'<button data-action="drill" data-id="'+id+'" style="font-size:11px;padding:3px 8px;background:var(--navy);color:#fff;border:none;border-radius:5px;cursor:pointer">Filter map →</button>'
++'<button onclick="handleDrillClick(this)" data-id="'+id+'" style="font-size:11px;padding:3px 8px;background:var(--navy);color:#fff;border:none;border-radius:5px;cursor:pointer">Filter map &#8594;</button>'
 +'</div>'
 +(timeline||'<div class="empty">No events</div>');
 // Set face images via DOM
@@ -1525,15 +1531,15 @@ if (e.key === 'Enter' && !document.getElementById('login-screen').classList.cont
 doLogin();
 }
 });
-// Global delegated click handler for dynamically rendered buttons
-document.addEventListener('click', function(e) {
-  const btn = e.target.closest('[data-action]');
-  if (!btn) return;
-  const action = btn.dataset.action;
-  const id = btn.dataset.id;
-  if (action === 'drill' && id) drillAgentInline(id);
-  if (action === 'drillrow' && id) drillAgentInline(id);
-});
+// Named handlers for dynamically rendered elements
+function handleAgentClick(row) {
+  var id = row.getAttribute('data-id');
+  if (id) drillAgentInline(id);
+}
+function handleDrillClick(btn) {
+  var id = btn.getAttribute('data-id');
+  if (id) drillAgentInline(id);
+}
 
 window.addEventListener('load', ()=>{
 initMap();
