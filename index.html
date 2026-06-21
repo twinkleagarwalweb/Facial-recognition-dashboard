@@ -1532,13 +1532,25 @@ doLogin();
 }
 });
 // Named handlers for dynamically rendered elements
+function clearAgentDetail() {
+var titleEl = document.getElementById('agent-detail-title');
+var backEl  = document.getElementById('agent-detail-back');
+var bodyEl  = document.getElementById('agent-detail-body');
+if (titleEl) titleEl.textContent = 'Select an agent';
+if (backEl)  backEl.style.display = 'none';
+if (bodyEl)  bodyEl.innerHTML = '<div class="empty" style="margin-top:40px">Click any agent row to see their full event timeline</div>';
+document.querySelectorAll('#agent-tbody tr').forEach(function(r){ r.style.background=''; });
+}
 function handleAgentClick(row) {
   var id = row.getAttribute('data-id');
   if (id) drillAgentInline(id);
 }
 function handleDrillClick(btn) {
   var id = btn.getAttribute('data-id');
-  if (id) drillAgentInline(id);
+  if (!id) return;
+  filterByAgent(id);
+  switchTabDirect('map');
+  showAgentTimeline(id);
 }
 
 window.addEventListener('load', ()=>{
