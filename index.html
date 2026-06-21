@@ -108,7 +108,7 @@
 </div>
 <div class="tabs">
 <button class="tab active" onclick="switchTab('map',this)">Map</button>
-<button class="tab" onclick="switchTab('agents',this)">CDDs</button>
+<button class="tab" onclick="switchTab('agents',this)">Workers</button>
 <button class="tab" onclick="switchTab('feed',this)">Event feed</button>
 <button class="tab" onclick="switchTab('analytics',this)">Analytics</button>
 </div>
@@ -139,9 +139,9 @@
 <div class="mc-bar"><div class="mc-fill" id="mb-miss" style="background:#A32D2D"></div></div>
 </div>
 <div class="mc" id="mc-agents">
-<div class="mc-label">Unique CDDs</div>
+<div class="mc-label">Unique Workers</div>
 <div class="mc-val" id="m-agents">—</div>
-<div class="mc-sub" id="m-agents-sub">CDDs active</div>
+<div class="mc-sub" id="m-agents-sub">Workers active</div>
 <div class="mc-bar"><div class="mc-fill" id="mb-agents" style="background:#0F6E56;width:100%"></div></div>
 </div>
 </div>
@@ -153,8 +153,8 @@
 <div class="l2-inner" id="l2-body"></div>
 </div>
 <div class="agent-filter-bar" id="agent-filter-bar">
-<span>👤 Showing events for CDD: <strong id="agent-filter-name"></strong></span>
-<button onclick="clearAgentFilter()">✕ Show all CDDs</button>
+<span>👤 Showing events for Worker: <strong id="agent-filter-name"></strong></span>
+<button onclick="clearAgentFilter()">✕ Show all Workers</button>
 </div>
 <div id="screen-map" class="screen active">
 <div class="main">
@@ -192,7 +192,7 @@
 <div style="padding:8px 12px;background:var(--bg2);border-bottom:.5px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0">
 <span style="font-size:11px;color:var(--text2);font-weight:500">Filter:</span>
 <select style="font-size:12px;padding:3px 7px;border-radius:5px;border:.5px solid var(--border2)" onchange="renderAgentTable(this.value)">
-<option value="all">All CDDs</option>
+<option value="all">All Workers</option>
 <option value="fail">Has failures / misses</option>
 <option value="below">Conf below threshold</option>
 </select>
@@ -212,11 +212,11 @@
 <!-- Right: agent detail panel -->
 <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)">
 <div style="padding:9px 14px;background:var(--bg2);border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-<span id="agent-detail-title" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Select a CDD</span>
+<span id="agent-detail-title" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Select a Worker</span>
 <button id="agent-detail-back" onclick="clearAgentDetail()" style="display:none;font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:500">✕ Clear</button>
 </div>
 <div id="agent-detail-body" style="flex:1;overflow-y:auto;padding:14px 16px">
-<div class="empty" style="margin-top:40px">Click any CDD row to see their full event timeline</div>
+<div class="empty" style="margin-top:40px">Click any Worker row to see their full event timeline</div>
 </div>
 </div>
 </div>
@@ -225,7 +225,7 @@
 <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--border);background:var(--bg2);flex-shrink:0;flex-wrap:wrap">
 <span style="font-size:11px;color:var(--text2);font-weight:500">Show:</span>
 <button id="feed-all-btn" class="feed-toggle active-toggle" onclick="setFeedView('all',this)">All events</button>
-<button id="feed-latest-btn" class="feed-toggle" onclick="setFeedView('latest',this)">Latest per CDD</button>
+<button id="feed-latest-btn" class="feed-toggle" onclick="setFeedView('latest',this)">Latest per Worker</button>
 <button id="feed-fails-btn" class="feed-toggle" onclick="setFeedView('fails',this)">Failures only</button>
 <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
 <span style="font-size:10px;color:var(--text3)">Sort:</span>
@@ -335,7 +335,7 @@ const EVENT_FACE = {}; // eventId -> base64 (for timeline)
 function cacheImages(events) {
 events.forEach(e => {
 if (e.faceImage) {
-AGENT_FACE[e.individualId] = e.faceImage; // latest per CDD
+AGENT_FACE[e.individualId] = e.faceImage; // latest per Worker
 EVENT_FACE[e.id] = e.faceImage;            // per event
 }
 });
@@ -684,7 +684,7 @@ ${l2Bar('3rd+ attempt',third,pass.length,'#A32D2D')}
 <div class="l2-card">
 <div class="l2-card-title">Lowest login pass rate</div>
 ${worstAgents.map(([id,s])=>l2Bar(shortId(id),pct(s.p,s.t),100,pct(s.p,s.t)>=75?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
-<div class="l2-sub" style="margin-top:6px">CDDs with >1 login</div>
+<div class="l2-sub" style="margin-top:6px">Workers with >1 login</div>
 </div>`;
 }
 else if (metric === 'conf') {
@@ -711,7 +711,7 @@ ${counts.map(b=>l2Bar(b.label,b.count,face.length,b.color)).join('')}
 <div class="l2-sub" style="margin-top:6px">${face.length} face scans total</div>
 </div>
 <div class="l2-card">
-<div class="l2-card-title">Lowest avg confidence CDDs</div>
+<div class="l2-card-title">Lowest avg confidence Workers</div>
 ${agentAvgs.map(a=>l2Bar(shortId(a.id),Math.round(a.avg*100),100,a.avg>=0.70?'#0F6E56':'#A32D2D',true)).join('')||'<div class="empty">—</div>'}
 <div class="l2-sub" style="margin-top:6px">${below.length} scans below 0.75 threshold</div>
 </div>`;
@@ -897,7 +897,7 @@ const outBars = Object.entries(oc).map(([k,v])=>barHTML(k,v,a.total,outcomeColor
 document.getElementById('rp-body').innerHTML = `
 <div class="stat-grid">
 <div class="stat-card"><div class="sl">Total events</div><div class="sv">${a.total}</div></div>
-<div class="stat-card"><div class="sl">Unique CDDs</div><div class="sv">${a.agents}</div></div>
+<div class="stat-card"><div class="sl">Unique Workers</div><div class="sv">${a.agents}</div></div>
 <div class="stat-card"><div class="sl">RE_VERIFY pass</div>
 <div class="sv" style="color:${a.rvPassRate>=75?'var(--green)':'var(--red)'}">${a.reverify?a.rvPassRate+'%':'—'}</div></div>
 <div class="stat-card"><div class="sl">Avg confidence</div>
@@ -925,11 +925,11 @@ const avgC = s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
 return `<tr><td>${shortId(id)}</td><td>${s.total}</td>
 <td><span class="pill pill-pass">${s.pass}</span></td>
 <td>${avgC?(avgC*100).toFixed(0)+'%':'—'}</td></tr>`;
-}).join('')||'<tr><td colspan="4" class="empty">No CDDs mapped to this LGA yet</td></tr>';
+}).join('')||'<tr><td colspan="4" class="empty">No Workers mapped to this LGA yet</td></tr>';
 document.getElementById('rp-body').innerHTML=`
 <div class="stat-grid">
 <div class="stat-card"><div class="sl">Events</div><div class="sv">${lgEvents.length}</div></div>
-<div class="stat-card"><div class="sl">CDDs</div><div class="sv">${a.agents}</div></div>
+<div class="stat-card"><div class="sl">Workers</div><div class="sv">${a.agents}</div></div>
 <div class="stat-card"><div class="sl">Verif. pass</div>
 <div class="sv" style="color:${a.rvPassRate>=75?'var(--green)':'var(--red)'}">${a.reverify?a.rvPassRate+'%':'—'}</div></div>
 <div class="stat-card"><div class="sl">Missed</div><div class="sv">${a.missed}</div></div>
@@ -937,12 +937,12 @@ document.getElementById('rp-body').innerHTML=`
 <div class="divider"></div>
 <div class="bs-title" style="margin-bottom:5px">Ward: ${feature.properties.ward}</div>
 <div class="divider"></div>
-<div class="bs-title" style="margin-bottom:6px">CDDs in LGA</div>
+<div class="bs-title" style="margin-bottom:6px">Workers in LGA</div>
 <table class="agt-table">
 <thead><tr><th>Worker</th><th>Events</th><th>Pass</th><th>Avg conf</th></tr></thead>
 <tbody>${agentRows}</tbody>
 </table>
-<div style="font-size:10px;color:var(--text3);margin-top:8px">CDD↔LGA mapping activates once boundaryCode is populated in events.</div>`;
+<div style="font-size:10px;color:var(--text3);margin-top:8px">Worker↔LGA mapping activates once boundaryCode is populated in events.</div>`;
 choroLayer.eachLayer(l=>{ if(l.feature===feature) l.setStyle({weight:3,color:'#185FA5'}); });
 }
 function showEventDetail(e){
@@ -1056,7 +1056,7 @@ body.innerHTML =
 +'<span style="font-size:11px;background:var(--bg3);padding:2px 8px;border-radius:8px;color:var(--text2)">'+e.eventType+'</span>'
 +'</div>'
 +'<div style="font-size:11px;color:var(--text2);line-height:2">'
-+'<div><b>CDD:</b> '+shortId(e.individualId)+'</div>'
++'<div><b>Worker:</b> '+shortId(e.individualId)+'</div>'
 +'<div><b>Confidence:</b> <span style="color:'+confCol+'">'+(e.confidence?(e.confidence*100).toFixed(1)+'%':'—')+'</span></div>'
 +'<div><b>Timestamp:</b> '+(e.timestamp||'—')+'</div>'
 +'<div><b>Popup shown:</b> '+(e.popupTime||'—')+'</div>'
@@ -1131,7 +1131,7 @@ const dims = [
 {id:'rv',   label:'RE_VERIFY pass rate',  score:rvScore,    w:'30%', threshold:75,
 detail: 'Pass: '+a.rvPass+' · Miss: '+a.missed+' · PIN: '+a.pinFall+' of '+a.reverify+' RE_VERIFY events'},
 {id:'enr',  label:'Enrollment completeness', score:enrollScore, w:'20%', threshold:90,
-detail: Object.values(as).filter(s=>s.total>0).length+' CDDs enrolled out of '+a.agents+' unique CDDs seen'},
+detail: Object.values(as).filter(s=>s.total>0).length+' Workers enrolled out of '+a.agents+' unique workers seen'},
 {id:'miss', label:'Miss / timeout (inverted)', score:missScore, w:'20%', threshold:60,
 detail: a.missed+' timeouts of '+a.reverify+' RE_VERIFY events ('+a.missRate+'% miss rate)'},
 {id:'lg',   label:'Login pass rate',      score:lgScore,    w:'15%', threshold:85,
@@ -1234,7 +1234,7 @@ barHTML('Enrolled',enrolledAgents.length,allAgents.length,'#0F6E56')
 +barHTML('Face verified',verifiedAgents.length,allAgents.length,'#185FA5')
 +barHTML('Never re-verified',neverVerified.length,allAgents.length,'#A32D2D')
 +'<div class="divider"></div>'
-+'<div style="font-size:11px;color:var(--text2)">'+allAgents.length+' unique CDDs in filtered data</div>';
++'<div style="font-size:11px;color:var(--text2)">'+allAgents.length+' unique workers in filtered data</div>';
 const risks = [];
 Object.entries(as).forEach(([id,s])=>{
 const agEv = ev.filter(e=>e.individualId===id);
@@ -1289,7 +1289,7 @@ const avg=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
 return avg>0&&avg<0.70;
 });
 const tbody=document.getElementById('agent-tbody');
-if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No CDDs match filter.</td></tr>';return;}
+if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No Workers match filter.</td></tr>';return;}
 tbody.innerHTML=rows.map(([id,s])=>{
 const avgC=s.confs.length?s.confs.reduce((a,b)=>a+b,0)/s.confs.length:0;
 const cls=s.miss>0||s.fail>0?'pill-miss':s.pass===s.total?'pill-pass':'pill-warn';
@@ -1536,9 +1536,9 @@ function clearAgentDetail() {
 var titleEl = document.getElementById('agent-detail-title');
 var backEl  = document.getElementById('agent-detail-back');
 var bodyEl  = document.getElementById('agent-detail-body');
-if (titleEl) titleEl.textContent = 'Select a CDD';
+if (titleEl) titleEl.textContent = 'Select a Worker';
 if (backEl)  backEl.style.display = 'none';
-if (bodyEl)  bodyEl.innerHTML = '<div class="empty" style="margin-top:40px">Click any CDD row to see their full event timeline</div>';
+if (bodyEl)  bodyEl.innerHTML = '<div class="empty" style="margin-top:40px">Click any Worker row to see their full event timeline</div>';
 document.querySelectorAll('#agent-tbody tr').forEach(function(r){ r.style.background=''; });
 }
 function handleAgentClick(row) {
