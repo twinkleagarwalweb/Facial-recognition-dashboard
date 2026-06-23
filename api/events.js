@@ -4,14 +4,14 @@
 const API_BASE  = 'https://bauchi-hcm.digit.org/attendance/face-auth/v1/_search';
 const TENANT_ID = 'ba';
 const PAGE_SIZE = 100;
+const FALLBACK_TOKEN = '1cf6a3e1-1c7e-4520-8951-85bd220237fe';
 
 function getRequestInfo(authToken, userInfo) {
   return {
     apiId: 'hcm', ver: '.01', action: '_search', did: '1', key: '1',
     authToken,
     userInfo: userInfo || {
-      id: 8864,
-      uuid: 'd8ea8b4a-8e0b-44ee-afe8-6cff4a6460e8',
+      id: 8864, uuid: 'd8ea8b4a-8e0b-44ee-afe8-6cff4a6460e8',
       userName: 'USR-011471', name: 'A4', mobileNumber: '9423213459',
       emailId: null, locale: null, active: true, tenantId: TENANT_ID,
       permanentCity: null, gender: null,
@@ -86,13 +86,9 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  // Get auth token from header (set by dashboard after login)
-  // Fall back to hardcoded token for backward compatibility
   const authHeader = req.headers['authorization'] || '';
-  const authToken = authHeader.replace('Bearer ', '') ||
-    '1cf6a3e1-1c7e-4520-8951-85bd220237fe';
+  const authToken = authHeader.replace('Bearer ', '') || FALLBACK_TOKEN;
 
-  // Get userInfo from header if provided
   let userInfo = null;
   try {
     const uiHeader = req.headers['x-user-info'];
@@ -102,42 +98,61 @@ module.exports = async function handler(req, res) {
   // Read requested limit from query param; 0 = fetch all
   const reqLimit = parseInt(req.query?.limit || '100');
   const FETCH_ALL = reqLimit === 0;
-  const MAX_EVENTS = FETCH_ALL ? Infinity : reqLimit;
+  const MAX_EVENTS = FETCH_ALL ? 10000 : reqLimit; // hard cap at 10k to avoid timeout
 
   try {
-    const effectivePageSize = (!FETCH_ALL && MAX_EVENTS < PAGE_SIZE) ? MAX_EVENTS : PAGE_SIZE;
-    const first = await fetchPage(0, effectivePageSize, authToken, userInfo);
-    const events = extractEvents(first);
+    const allEvents = [];
+    let offset = 0;
+    const batchSize = PAGE_SIZE;
 
-    const totalCount =
-      first?.totalCount ||
-      first?.faceAuthEventResponse?.totalCount ||
-      events.length;
+    // Keep fetching pages until we have enough or no more data comes back
+    while (allEvents.length < MAX_EVENTS) {
+      const fetchSize = Math.min(batchSize, MAX_EVENTS - allEvents.length);
+      const page = await fetchPage(offset, fetchSize, authToken, userInfo);
+      const pageEvents = extractEvents(page);
 
-    if (totalCount > PAGE_SIZE) {
-      const cap = FETCH_ALL ? totalCount : Math.min(totalCount, MAX_EVENTS);
-      const offsets = [];
-      for (let o = PAGE_SIZE; o < cap; o += PAGE_SIZE) offsets.push(o);
-      if (offsets.length > 0) {
-        const pages = await Promise.all(offsets.map(o => fetchPage(o, PAGE_SIZE, authToken, userInfo)));
-        pages.forEach(p => events.push(...extractEvents(p)));
-      }
+      if (pageEvents.length === 0) break; // no more data
+
+      allEvents.push(...pageEvents);
+
+      // Check if DIGIT returned a totalCount we can use
+      const totalCount = page?.totalCount ||
+        page?.faceAuthEventResponse?.totalCount || null;
+
+      // If we know the total and we've got it all, stop
+      if (totalCount && allEvents.length >= totalCount) break;
+
+      // If this page returned fewer than requested, we've hit the end
+      if (pageEvents.length < fetchSize) break;
+
+      offset += pageEvents.length;
+
+      // Safety: Vercel functions have a 10s timeout on hobby plan
+      // Stop if we've been fetching too many pages
+      if (offset > 5000) break;
     }
-    if (!FETCH_ALL && events.length > MAX_EVENTS) events.splice(MAX_EVENTS);
 
-    const normalised = events.map(normalise);
+    const normalised = allEvents.map(normalise);
+
+    // Deduplicate by event id
+    const seen = new Set();
+    const unique = normalised.filter(e => {
+      if (!e.id) return true;
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
 
     res.status(200).json({
       success: true,
-      count: normalised.length,
-      totalCount,
+      count: unique.length,
+      totalCount: unique.length,
       fetchedAt: new Date().toISOString(),
-      events: normalised
+      events: unique
     });
 
   } catch (err) {
     console.error('[api/events] error:', err.message);
-    // If auth error, signal 401 so dashboard can redirect to login
     const is401 = err.message.includes('401') || err.message.includes('403');
     res.status(is401 ? 401 : 500).json({
       success: false,
