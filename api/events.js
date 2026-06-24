@@ -96,13 +96,14 @@ module.exports = async function handler(req, res) {
     if (uiHeader) userInfo = JSON.parse(decodeURIComponent(uiHeader));
   } catch {}
 
-  const reqLimit = parseInt(req.query?.limit || '100');
+  const reqLimit  = parseInt(req.query?.limit  || '100');
+  const startOffset = parseInt(req.query?.offset || '0');
   const FETCH_ALL = reqLimit === 0;
   const MAX_EVENTS = FETCH_ALL ? 10000 : reqLimit;
 
   try {
     const allEvents = [];
-    let offset = 0;
+    let offset = startOffset;
 
     while (allEvents.length < MAX_EVENTS) {
       const fetchSize = Math.min(PAGE_SIZE, MAX_EVENTS - allEvents.length);
@@ -113,7 +114,7 @@ module.exports = async function handler(req, res) {
       allEvents.push(...pageEvents);
       if (pageEvents.length < fetchSize) break;
       offset += pageEvents.length;
-      if (offset > 9000) break;
+      if (offset > startOffset + 9000) break;
     }
 
     const normalised = allEvents.map(normalise);
@@ -130,6 +131,7 @@ module.exports = async function handler(req, res) {
       success: true,
       count: unique.length,
       totalCount: unique.length,
+      startOffset: startOffset,
       fetchedAt: new Date().toISOString(),
       events: unique
     });
