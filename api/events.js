@@ -1,7 +1,5 @@
 // api/events.js — Vercel serverless proxy for DIGIT face auth API
-// Auth token comes from Authorization header (set by dashboard after login)
-
-const API_BASE  = 'https://bauchi-hcm.digit.org/attendance/face-auth/v1/_search';
+const API_BASE  = 'https://bauchi-hcm.digit.org/attendance/face-auth/v1/_search?tenantId=ba';
 const TENANT_ID = 'ba';
 const PAGE_SIZE = 100;
 const FALLBACK_TOKEN = '1cf6a3e1-1c7e-4520-8951-85bd220237fe';
@@ -21,19 +19,22 @@ function getRequestInfo(authToken, userInfo) {
   };
 }
 
-async function fetchPage(offset, pageSize, authToken, userInfo) {
-  const url = `${API_BASE}?tenantId=${TENANT_ID}&limit=${pageSize}&offset=${offset}`;
-  const res = await fetch(url, {
+async function fetchPage(offset, limit, authToken, userInfo) {
+  const res = await fetch(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      faceAuthEventSearchCriteria: { tenantId: TENANT_ID },
+      faceAuthEventSearchCriteria: {
+        tenantId: TENANT_ID,
+        limit: limit,
+        offset: offset
+      },
       RequestInfo: { ...getRequestInfo(authToken, userInfo), ts: Date.now() }
     })
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`DIGIT API ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error('DIGIT API ' + res.status + ': ' + text.slice(0, 200));
   }
   return res.json();
 }
@@ -95,46 +96,28 @@ module.exports = async function handler(req, res) {
     if (uiHeader) userInfo = JSON.parse(decodeURIComponent(uiHeader));
   } catch {}
 
-  // Read requested limit from query param; 0 = fetch all
   const reqLimit = parseInt(req.query?.limit || '100');
   const FETCH_ALL = reqLimit === 0;
-  const MAX_EVENTS = FETCH_ALL ? 10000 : reqLimit; // hard cap at 10k to avoid timeout
+  const MAX_EVENTS = FETCH_ALL ? 10000 : reqLimit;
 
   try {
     const allEvents = [];
     let offset = 0;
-    const batchSize = PAGE_SIZE;
 
-    // Keep fetching pages until we have enough or no more data comes back
     while (allEvents.length < MAX_EVENTS) {
-      const fetchSize = Math.min(batchSize, MAX_EVENTS - allEvents.length);
+      const fetchSize = Math.min(PAGE_SIZE, MAX_EVENTS - allEvents.length);
       const page = await fetchPage(offset, fetchSize, authToken, userInfo);
       const pageEvents = extractEvents(page);
 
-      if (pageEvents.length === 0) break; // no more data
-
+      if (pageEvents.length === 0) break;
       allEvents.push(...pageEvents);
-
-      // Check if DIGIT returned a totalCount we can use
-      const totalCount = page?.totalCount ||
-        page?.faceAuthEventResponse?.totalCount || null;
-
-      // If we know the total and we've got it all, stop
-      if (totalCount && allEvents.length >= totalCount) break;
-
-      // If this page returned fewer than requested, we've hit the end
       if (pageEvents.length < fetchSize) break;
-
       offset += pageEvents.length;
-
-      // Safety: Vercel functions have a 10s timeout on hobby plan
-      // Stop if we've been fetching too many pages
-      if (offset > 5000) break;
+      if (offset > 9000) break;
     }
 
     const normalised = allEvents.map(normalise);
 
-    // Deduplicate by event id
     const seen = new Set();
     const unique = normalised.filter(e => {
       if (!e.id) return true;
