@@ -73,7 +73,7 @@
 <p id="topbar-meta">Loading…</p>
 </div>
 <div class="topbar-right">
-<select id="limit-select" onchange="loadData()" title="Events to fetch from API">
+<select id="limit-select" onchange="resetPagination();loadData()" title="Events to fetch from API">
 <option value="100">100 events</option>
 <option value="500">500 events</option>
 <option value="1000">1000 events</option>
@@ -81,10 +81,9 @@
 <option value="0">All events</option>
 </select>
 <div style="display:flex;align-items:center;gap:4px">
-<span style="font-size:10px;color:rgba(255,255,255,.5)">Offset:</span>
-<input type="number" id="offset-input" value="0" min="0" step="100"
-  style="width:70px;font-size:12px;padding:4px 6px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;text-align:center"
-  onchange="loadData()" title="Starting offset for API fetch">
+<button onclick="prevPage()" id="prev-btn" class="refresh-btn" style="padding:4px 8px;font-size:11px" disabled>◀ Prev</button>
+<span id="page-info" style="font-size:11px;color:rgba(255,255,255,.7);min-width:80px;text-align:center">Page 1</span>
+<button onclick="nextPage()" id="next-btn" class="refresh-btn" style="padding:4px 8px;font-size:11px">Next ▶</button>
 </div>
 <input type="date" id="date-from" onchange="applyFilters()" title="From date"
       style="font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;width:130px">
@@ -303,7 +302,10 @@ let selectedItem = null;
 let map, dotLayer, choroLayer;
 let isLoading = false;
 let feedView = 'all';
-let feedSort = 'desc'; // desc=newest first, asc=oldest first
+let feedSort = 'desc';
+let currentPage = 1;
+let currentOffset = 0;
+let lastPageHadFullResults = true; // tracks if there might be more pages // desc=newest first, asc=oldest first
 let activeAgentFilter = null;
 let activeL2 = null;
 function parseResponseSecs(rt) {
@@ -371,6 +373,48 @@ geometry:{type:'Polygon',coordinates:[[[10.2,9.9],[10.7,9.9],[10.7,10.4],[10.2,1
 geometry:{type:'Polygon',coordinates:[[[10.3,10.2],[10.8,10.2],[10.8,10.7],[10.3,10.7],[10.3,10.2]]]}},
 ]
 };
+function getPageLimit() {
+  return parseInt(document.getElementById('limit-select').value) || 100;
+}
+function nextPage() {
+  if (!lastPageHadFullResults) return;
+  const limit = getPageLimit();
+  if (limit === 0) return; // "All events" has no pages
+  currentPage++;
+  currentOffset += limit;
+  loadData();
+}
+function prevPage() {
+  if (currentPage <= 1) return;
+  const limit = getPageLimit();
+  currentPage--;
+  currentOffset = Math.max(0, currentOffset - limit);
+  loadData();
+}
+function resetPagination() {
+  currentPage = 1;
+  currentOffset = 0;
+  lastPageHadFullResults = true;
+}
+function updatePaginationUI() {
+  const limit = getPageLimit();
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const pageInfo = document.getElementById('page-info');
+  if (limit === 0) {
+    // All events mode — no pagination
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
+    if (pageInfo) pageInfo.textContent = 'All events';
+  } else {
+    if (prevBtn) prevBtn.disabled = currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = !lastPageHadFullResults;
+    const from = currentOffset + 1;
+    const to = currentOffset + RAW_EVENTS.length;
+    if (pageInfo) pageInfo.textContent = 'Page ' + currentPage + ' (' + from + '-' + to + ')';
+  }
+}
+
 async function loadData() {
 if (isLoading) return;
 isLoading = true;
@@ -390,8 +434,7 @@ if (session.userInfo) {
 headers['X-User-Info'] = encodeURIComponent(JSON.stringify(session.userInfo));
 }
 }
-const offsetVal = document.getElementById('offset-input').value || '0';
-    const res = await fetch('/api/events?limit=' + limitVal + '&offset=' + offsetVal, { headers });
+    const res = await fetch('/api/events?limit=' + limitVal + '&offset=' + currentOffset, { headers });
 if (res.status === 401) {
 clearSession();
 location.reload();
