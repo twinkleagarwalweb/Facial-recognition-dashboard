@@ -73,12 +73,12 @@
 <p id="topbar-meta">Loading…</p>
 </div>
 <div class="topbar-right">
-<select id="limit-select" onchange="resetPagination();loadData()" title="Events to fetch from API">
-<option value="100">100 events</option>
-<option value="500">500 events</option>
-<option value="1000">1000 events</option>
-<option value="5000">5000 events</option>
-<option value="0">All events</option>
+<select id="limit-select" onchange="resetPagination();loadData()" title="Events per page">
+<option value="100">100 / page</option>
+<option value="500">500 / page</option>
+<option value="1000" selected>1000 / page</option>
+<option value="5000">5000 / page</option>
+<option value="0">Load all</option>
 </select>
 <div style="display:flex;align-items:center;gap:4px">
 <button onclick="prevPage()" id="prev-btn" class="refresh-btn" style="padding:4px 8px;font-size:11px" disabled>◀ Prev</button>
@@ -402,16 +402,15 @@ function updatePaginationUI() {
   const nextBtn = document.getElementById('next-btn');
   const pageInfo = document.getElementById('page-info');
   if (limit === 0) {
-    // All events mode — no pagination
     if (prevBtn) prevBtn.disabled = true;
     if (nextBtn) nextBtn.disabled = true;
-    if (pageInfo) pageInfo.textContent = 'All events';
+    if (pageInfo) pageInfo.textContent = RAW_EVENTS.length + ' loaded';
   } else {
     if (prevBtn) prevBtn.disabled = currentPage <= 1;
     if (nextBtn) nextBtn.disabled = !lastPageHadFullResults;
     const from = currentOffset + 1;
     const to = currentOffset + RAW_EVENTS.length;
-    if (pageInfo) pageInfo.textContent = 'Page ' + currentPage + ' (' + from + '-' + to + ')';
+    if (pageInfo) pageInfo.textContent = 'Page ' + currentPage + ' (' + from + '–' + to + ')';
   }
 }
 
